@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Royal Document Vault</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <script src="firebase-config.js" defer></script>
+    <script src="app.js" defer></script>
+</head>
+<body>
+    <!-- Login/Signup Container -->
+    <div id="auth-container" class="auth-container">
+        <div class="auth-box royal-glass">
+            <div class="auth-header">
+                <h1><i class="fas fa-crown"></i> Royal Vault</h1>
+                <p>Premium Document Storage</p>
+            </div>
+            
+            <form id="auth-form" class="auth-form">
+                <div class="form-toggle">
+                    <button type="button" class="toggle-btn active" id="login-toggle">Login</button>
+                    <button type="button" class="toggle-btn" id="signup-toggle">Sign Up</button>
+                </div>
+                
+                <div class="input-group">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="username" placeholder="Username" required>
+                </div>
+                
+                <div class="input-group">
+                    <i class="fas fa-phone"></i>
+                    <input type="tel" id="phone" placeholder="Phone Number" required>
+                </div>
+                
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="password" placeholder="Password" required>
+                </div>
+                
+                <button type="submit" class="btn royal-btn" id="auth-submit">Login</button>
+                
+                <div class="auth-footer">
+                    <a href="#" id="forgot-password">Forgot Password?</a>
+                </div>
+            </form>
+            
+            <!-- Forgot Password Modal -->
+            <div id="forgot-modal" class="modal">
+                <div class="modal-content royal-glass">
+                    <h3>Reset Password</h3>
+                    <input type="email" id="reset-email" placeholder="Enter your email" class="modal-input">
+                    <div class="modal-actions">
+                        <button class="btn royal-btn" id="send-reset">Send Reset Link</button>
+                        <button class="btn btn-secondary" id="cancel-reset">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="app-container" class="app-container hidden">
+        <!-- Sidebar -->
+        <div class="sidebar royal-gradient">
+            <div class="sidebar-header">
+                <h2><i class="fas fa-crown"></i> Royal Vault</h2>
+                <div class="user-info">
+                    <div class="user-avatar">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                    <div class="user-details">
+                        <h3 id="display-username">User</h3>
+                        <p id="user-phone">Phone</p>
+                    </div>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" data-section="dashboard">
+                    <i class="fas fa-home"></i> Dashboard
+                </a>
+                <a href="#" class="nav-item" data-section="upload">
+                    <i class="fas fa-cloud-upload-alt"></i> Upload
+                </a>
+                <a href="#" class="nav-item" data-section="documents">
+                    <i class="fas fa-file-alt"></i> Documents
+                </a>
+                <a href="#" class="nav-item" data-section="qr-codes">
+                    <i class="fas fa-qrcode"></i> QR Codes
+                </a>
+                <a href="#" class="nav-item" data-section="settings">
+                    <i class="fas fa-cog"></i> Settings
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <button class="btn logout-btn" id="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <header class="main-header">
+                <h1 id="page-title">Dashboard</h1>
+                <div class="search-bar">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="search-input" placeholder="Search documents...">
+                </div>
+            </header>
+
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="content-section active">
+                <div class="stats-grid">
+                    <div class="stat-card royal-gradient">
+                        <i class="fas fa-file-code"></i>
+                        <h3>Code Files</h3>
+                        <p id="code-count">0</p>
+                    </div>
+                    <div class="stat-card royal-gradient">
+                        <i class="fas fa-file-word"></i>
+                        <h3>Documents</h3>
+                        <p id="doc-count">0</p>
+                    </div>
+                    <div class="stat-card royal-gradient">
+                        <i class="fas fa-image"></i>
+                        <h3>Images</h3>
+                        <p id="img-count">0</p>
+                    </div>
+                    <div class="stat-card royal-gradient">
+                        <i class="fas fa-video"></i>
+                        <h3>Videos</h3>
+                        <p id="video-count">0</p>
+                    </div>
+                </div>
+                
+                <div class="recent-files">
+                    <h2>Recent Files</h2>
+                    <div id="recent-files-list" class="files-grid">
+                        <!-- Files will be loaded here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Upload Section -->
+            <section id="upload" class="content-section">
+                <!-- Upload Area -->
+                <div class="upload-area royal-glass">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <h3>Drop files here or click to upload</h3>
+                    <p id="file-size-info">High-speed chunked upload to Realtime DB (max 100MB)</p>
+                    <p class="file-note">Supports: .ino, .cpp, .docx, .pdf, .jpg, .png, .mp4, etc.</p>
+                    <input type="file" id="file-upload" multiple>
+                    <div class="file-types">
+                        <span class="file-tag"><i class="fas fa-microchip"></i> Arduino (.ino)</span>
+                        <span class="file-tag"><i class="fas fa-file-word"></i> Docs (.docx, .pdf)</span>
+                        <span class="file-tag"><i class="fas fa-image"></i> Images (.jpg, .png)</span>
+                        <span class="file-tag"><i class="fas fa-video"></i> Videos</span>
+                    </div>
+                </div>
+                
+                <!-- Upload Monitor -->
+                <div class="upload-monitor royal-glass">
+                    <div class="monitor-header">
+                        <h4><i class="fas fa-tachometer-alt"></i> Upload Monitor</h4>
+                        <div class="internet-speed">
+                            <i class="fas fa-wifi"></i>
+                            <span id="internet-speed">Testing...</span>
+                        </div>
+                    </div>
+                    
+                    <div class="upload-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Current Speed:</span>
+                            <span class="stat-value" id="current-speed">0 KB/s</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Avg Speed:</span>
+                            <span class="stat-value" id="avg-speed">0 KB/s</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Peak Speed:</span>
+                            <span class="stat-value" id="peak-speed">0 KB/s</span>
+                        </div>
+                    </div>
+                    
+                    <div class="progress-container">
+                        <div class="progress-header">
+                            <span>Overall Progress</span>
+                            <span id="overall-percent">0%</span>
+                        </div>
+                        <div class="progress-bar-large">
+                            <div class="progress-fill-large" id="overall-progress" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Current Upload -->
+                <div id="current-upload" class="current-upload royal-glass">
+                    <div class="current-header">
+                        <h5><i class="fas fa-spinner fa-spin"></i> Currently Uploading</h5>
+                        <button class="btn-cancel-upload" id="cancel-upload">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                    </div>
+                    
+                    <div class="current-file-info">
+                        <div class="file-icon-small">
+                            <i class="fas fa-file"></i>
+                        </div>
+                        <div class="file-details">
+                            <div class="file-name" id="current-file-name">No active upload</div>
+                            <div class="file-size" id="current-file-size">--</div>
+                        </div>
+                        <div class="file-progress">
+                            <span id="current-percent">0%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="current-progress">
+                        <div class="progress-details">
+                            <span id="current-progress-text">Ready</span>
+                            <span id="current-speed-text" class="speed-excellent">0 KB/s</span>
+                        </div>
+                        <div class="progress-bar-current">
+                            <div class="progress-fill-current" id="current-progress-bar" style="width: 0%"></div>
+                        </div>
+                        <div class="progress-time">
+                            <span>Elapsed: <span id="elapsed-time">0s</span></span>
+                            <span>Remaining: <span id="remaining-time">--</span></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Upload Queue -->
+                <div id="upload-queue" class="upload-queue royal-glass">
+                    <h5><i class="fas fa-list-ol"></i> Upload Queue (<span id="queue-count">0</span>)</h5>
+                    <div id="queue-list" class="queue-list">
+                        <!-- Queue items will be added here -->
+                    </div>
+                    <div class="queue-actions">
+                        <button class="btn queue-btn" id="pause-upload">
+                            <i class="fas fa-pause"></i> Pause All
+                        </button>
+                        <button class="btn queue-btn" id="resume-upload">
+                            <i class="fas fa-play"></i> Resume All
+                        </button>
+                        <button class="btn queue-btn btn-danger" id="clear-queue">
+                            <i class="fas fa-trash"></i> Clear Queue
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Upload Tips -->
+                <div class="upload-tips royal-glass">
+                    <h5><i class="fas fa-lightbulb"></i> Upload Tips</h5>
+                    <p>• Files are uploaded in chunks to Realtime Database</p>
+                    <p>• Large files are split into manageable chunks</p>
+                    <p>• Upload resumes automatically if interrupted</p>
+                    <p>• Multiple files upload in parallel (up to 3 at once)</p>
+                </div>
+            </section>
+
+            <!-- Documents Section -->
+            <section id="documents" class="content-section">
+                <div class="section-header">
+                    <h2>All Documents</h2>
+                    <div class="filter-options">
+                        <select id="filter-type" class="filter-select">
+                            <option value="all">All Types</option>
+                            <option value="code">Code Files</option>
+                            <option value="document">Documents</option>
+                            <option value="image">Images</option>
+                            <option value="other">Others</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="documents-list" class="documents-table-container">
+                    <table class="documents-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Size</th>
+                                <th>Uploaded</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="documents-table-body">
+                            <!-- Documents will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- QR Codes Section -->
+            <section id="qr-codes" class="content-section">
+                <div class="qr-generator royal-glass">
+                    <h3>Generate QR Code</h3>
+                    <select id="qr-file-select" class="qr-select">
+                        <option value="">Select a file</option>
+                    </select>
+                    <button class="btn royal-btn" id="generate-qr">Generate QR</button>
+                </div>
+                
+                <div id="qr-display" class="qr-display">
+                    <!-- QR Code will be displayed here -->
+                </div>
+                
+                <div class="qr-list">
+                    <h3>Your QR Codes</h3>
+                    <div id="qr-codes-list" class="qr-grid">
+                        <!-- Generated QR codes will appear here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings Section -->
+            <section id="settings" class="content-section">
+                <div class="settings-card royal-glass">
+                    <h3><i class="fas fa-user-edit"></i> Profile Settings</h3>
+                    
+                    <div class="input-group">
+                        <i class="fas fa-user"></i>
+                        <input type="text" id="new-username" placeholder="New Username">
+                    </div>
+                    
+                    <div class="input-group">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="new-password" placeholder="New Password">
+                    </div>
+                    
+                    <div class="input-group">
+                        <i class="fas fa-file-upload"></i>
+                        <div class="file-size-control">
+                            <label for="max-file-size">Max File Size (MB):</label>
+                            <div class="range-container">
+                                <input type="range" id="max-file-size" min="1" max="100" value="1" class="size-slider">
+                                <span id="size-value">1 MB</span>
+                            </div>
+                            <div class="size-presets">
+                                <button type="button" class="size-preset" data-size="1">1MB</button>
+                                <button type="button" class="size-preset" data-size="5">5MB</button>
+                                <button type="button" class="size-preset" data-size="10">10MB</button>
+                                <button type="button" class="size-preset" data-size="50">50MB</button>
+                                <button type="button" class="size-preset" data-size="100">100MB</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <i class="fas fa-network-wired"></i>
+                        <div class="upload-options">
+                            <label for="chunk-size">Chunk Size:</label>
+                            <select id="chunk-size" class="chunk-select">
+                                <option value="256" style="color: black;">256KB (Fastest)</option>
+                                <option value="512" selected style="color: black;">512KB (Recommended)</option>
+                                <option value="1024" style="color: black;">1MB (Stable)</option>
+                            </select>
+                            <p class="option-note">Smaller chunks = faster upload, more chunks</p>
+                        </div>
+                    </div>
+                    
+                    <button class="btn royal-btn" id="save-settings">Save Changes</button>
+                </div>
+                
+                <div class="settings-card royal-glass">
+                    <h3><i class="fas fa-info-circle"></i> About Royal Vault</h3>
+                    <p>Premium document storage solution with:</p>
+                    <ul>
+                        <li><i class="fas fa-check-circle"></i> High-speed chunked uploads to Realtime DB</li>
+                        <li><i class="fas fa-check-circle"></i> Real-time internet speed monitoring</li>
+                        <li><i class="fas fa-check-circle"></i> Firebase Realtime Database storage</li>
+                        <li><i class="fas fa-check-circle"></i> QR code generation & download</li>
+                        <li><i class="fas fa-check-circle"></i> Persistent login sessions</li>
+                        <li><i class="fas fa-check-circle"></i> Royal premium design</li>
+                    </ul>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- File Preview Modal -->
+    <div id="preview-modal" class="modal">
+        <div class="modal-content royal-glass">
+            <div class="modal-header">
+                <h3 id="preview-title"></h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body" id="preview-body">
+                <!-- File preview will be loaded here -->
+            </div>
+            <div class="modal-actions">
+                <button class="btn royal-btn" id="download-file">Download</button>
+                <button class="btn" id="generate-file-qr">Generate QR</button>
+                <button class="btn btn-secondary" id="close-preview">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast"></div>
+</body>
+</html>

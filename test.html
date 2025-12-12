@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>File → QR (single file)</title>
+  <style>
+    :root{--bg:#0f1724;--card:#111827;--muted:#94a3b8;--accent:#7c3aed}
+    *{box-sizing:border-box;font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial}
+    body{margin:0;background:linear-gradient(180deg,#071029 0%,#07111b 100%);color:#e6eef8;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px}
+    .card{width:880px;max-width:100%;background:rgba(255,255,255,0.03);border-radius:12px;padding:20px;box-shadow:0 8px 30px rgba(2,6,23,0.6);}
+    h1{margin:0 0 6px;font-size:20px}
+    p.lead{margin:0 0 16px;color:var(--muted);font-size:13px}
+    .grid{display:grid;grid-template-columns:1fr 320px;gap:16px}
+    .controls{display:flex;gap:8px;flex-wrap:wrap}
+    input[type=file]{display:block}
+    label.btn{background:linear-gradient(90deg,var(--accent),#4f46e5);padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:600}
+    button{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:8px 12px;border-radius:8px;color:inherit;cursor:pointer}
+    .meta{margin-top:10px;color:var(--muted);font-size:13px}
+    #qrcode{display:flex;align-items:center;justify-content:center;padding:14px;background:rgba(255,255,255,0.02);border-radius:8px}
+    textarea{width:100%;height:120px;background:transparent;border:1px dashed rgba(255,255,255,0.04);padding:8px;border-radius:8px;color:inherit}
+    .warn{color:#ffd166;font-weight:700}
+    .ok{color:#7ef9a3;font-weight:700}
+    footer{margin-top:12px;color:var(--muted);font-size:12px}
+    .small{font-size:12px;color:var(--muted)}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Upload file → Generate QR (single HTML file)</h1>
+    <p class="lead">Pick a small file (image/text) and this page will embed it as a data URL inside the QR. Scan with a phone to view. <span class="small">(Size limits apply — see notes.)</span></p>
+
+    <div class="grid">
+      <div>
+        <div class="controls">
+          <input id="fileInput" type="file" />
+          <button id="makeBtn">Create QR</button>
+          <button id="downloadHtmlBtn">Download as HTML</button>
+        </div>
+        <div class="meta" id="info">No file chosen.</div>
+
+        <h3 style="margin-top:12px">Raw data URL (truncated)</h3>
+        <textarea id="dataPreview" readonly placeholder="Data URL will appear here (truncated)"></textarea>
+      </div>
+
+      <div>
+        <div id="qrcode" style="height:320px;">QR will appear here</div>
+        <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+          <div id="sizeInfo" class="small">—</div>
+          <div style="margin-left:auto"><button id="clearBtn">Clear</button></div>
+        </div>
+        <div style="margin-top:8px" class="small">Tip: QR codes can only hold a limited amount of data. For best results use tiny files (a few KB). If your file is large, upload to a server and use its URL instead.</div>
+      </div>
+    </div>
+
+    <footer>
+      Generated locally in your browser. Files are not uploaded to any server. Scanning the QR opens a data: URL — some scanners or browsers may refuse very long URLs.
+    </footer>
+  </div>
+
+  <!-- QRCode.js from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script>
+    // Elements
+    const fileInput = document.getElementById('fileInput');
+    const makeBtn = document.getElementById('makeBtn');
+    const qrcodeEl = document.getElementById('qrcode');
+    const info = document.getElementById('info');
+    const dataPreview = document.getElementById('dataPreview');
+    const sizeInfo = document.getElementById('sizeInfo');
+    const clearBtn = document.getElementById('clearBtn');
+    const downloadHtmlBtn = document.getElementById('downloadHtmlBtn');
+
+    let lastDataUrl = null;
+    let qr = null;
+
+    function humanSize(n){
+      if(n<1024) return n+' B';
+      if(n<1024*1024) return (n/1024).toFixed(1)+' KB';
+      return (n/1024/1024).toFixed(2)+' MB';
+    }
+
+    function reset(){
+      qrcodeEl.innerHTML = 'QR will appear here';
+      dataPreview.value = '';
+      info.textContent = 'No file chosen.';
+      sizeInfo.textContent = '—';
+      lastDataUrl = null;
+      qr = null;
+    }
+
+    clearBtn.addEventListener('click', reset);
+
+    makeBtn.addEventListener('click', ()=>{
+      const f = fileInput.files[0];
+      if(!f){ alert('Pick a file first'); return; }
+
+      const reader = new FileReader();
+      reader.onload = e => {
+        const dataUrl = e.target.result; // data:...base64
+        // warn about size
+        const approxBytes = dataUrl.length * 0.75;
+        sizeInfo.textContent = 'Data URL ~ '+humanSize(approxBytes)+' (file size: '+humanSize(f.size)+')';
+
+        // Practical QR limit depends on version/charset. QR code capacity for binary is ~2953 bytes at max; URLs reduce capacity.
+        if(approxBytes > 2700){
+          sizeInfo.innerHTML += ' — <span class="warn">Too big for reliable QR encoding. Use a smaller file or host it online.</span>';
+        } else {
+          sizeInfo.innerHTML += ' — <span class="ok">OK to try</span>';
+        }
+
+        // Truncate preview for readability
+        dataPreview.value = dataUrl.slice(0,2048) + (dataUrl.length>2048 ? '\n\n---truncated---' : '');
+        lastDataUrl = dataUrl;
+
+        // create a QR
+        qrcodeEl.innerHTML = '';
+        try{
+          qr = new QRCode(qrcodeEl, {
+            text: dataUrl,
+            width: 300,
+            height: 300,
+            correctLevel: QRCode.CorrectLevel.M
+          });
+          info.textContent = 'QR generated. Scan with your phone.';
+        }catch(err){
+          console.error(err);
+          info.textContent = 'Failed to generate QR: '+err.message;
+        }
+      };
+
+      // read as data URL
+      reader.readAsDataURL(f);
+    });
+
+    // Make downloadable HTML that embeds the file (data URL) and shows it when opened.
+    downloadHtmlBtn.addEventListener('click', ()=>{
+      if(!lastDataUrl){ alert('Generate a QR first'); return; }
+      const tpl = `<!doctype html>\n<html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Embedded file</title></head><body style=\"margin:0;display:flex;align-items:center;justify-content:center;height:100vh;background:#0b1220;color:#fff\">\n  <div style=\"max-width:95vw;max-height:95vh;overflow:auto;text-align:center\">\n    <h2>Embedded file preview</h2>\n    <div id=\"content\">\n    </div>\n    <p style=\"font-size:13px;opacity:0.8\"><a id=\"raw\" href=\"${lastDataUrl}\" target=\"_blank\">Open raw data URL</a></p>\n  </div>\n  <script>\n    const url = ${JSON.stringify(lastDataUrl)};\n    // Try to guess type from data URL
+    const mime = url.split(':')[1].split(';')[0];\n    const container = document.getElementById('content');\n    if(mime.startsWith('image/')){ const img = document.createElement('img'); img.src = url; img.style.maxWidth='100%'; img.style.maxHeight='80vh'; container.appendChild(img);} else if(mime.startsWith('text/') || mime==='application/json'){ fetch(url).then(r=>r.text()).then(t=>{const pre=document.createElement('pre');pre.textContent=t;pre.style.textAlign='left';pre.style.whiteSpace='pre-wrap';container.appendChild(pre)}).catch(()=>{container.innerText='Cannot render text preview.'}); } else { const a=document.createElement('a'); a.href=url; a.download='file'; a.textContent='Download file'; container.appendChild(a);}\n  <\/script>\n</body></html>`;
+
+      const blob = new Blob([tpl], {type:'text/html'});
+      const u = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = u; a.download = 'embedded-file.html';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(u),5000);
+    });
+
+    // Initialize
+    reset();
+  </script>
+</body>
+</html>
