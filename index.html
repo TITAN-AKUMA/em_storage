@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Royal Document Vault</title>
+    <title id="page-title">Royal Document Vault</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
     <script src="firebase-config.js" defer></script>
+    <script src="config.js" defer></script>
     <script src="app.js" defer></script>
 </head>
 <body>
@@ -18,8 +18,8 @@
     <div id="auth-container" class="auth-container">
         <div class="auth-box royal-glass">
             <div class="auth-header">
-                <h1><i class="fas fa-crown"></i> Royal Vault</h1>
-                <p>Premium Document Storage</p>
+                <h1><span class="app-logo"></span> <span id="app-name" class="app-name-display">Royal Vault</span></h1>
+                <p id="app-tagline" class="app-tagline-display">Premium Document Storage</p>
             </div>
             
             <form id="auth-form" class="auth-form">
@@ -33,7 +33,7 @@
                     <input type="text" id="username" placeholder="Username" required>
                 </div>
                 
-                <div class="input-group">
+                <div class="input-group" id="phone-group">
                     <i class="fas fa-phone"></i>
                     <input type="tel" id="phone" placeholder="Phone Number" required>
                 </div>
@@ -69,7 +69,7 @@
         <!-- Sidebar -->
         <div class="sidebar royal-gradient">
             <div class="sidebar-header">
-                <h2><i class="fas fa-crown"></i> Royal Vault</h2>
+                <h2><span class="app-logo"></span> <span class="app-name-display">Royal Vault</span></h2>
                 <div class="user-info">
                     <div class="user-avatar">
                         <i class="fas fa-user-circle"></i>
@@ -91,8 +91,8 @@
                 <a href="#" class="nav-item" data-section="documents">
                     <i class="fas fa-file-alt"></i> Documents
                 </a>
-                <a href="#" class="nav-item" data-section="qr-codes">
-                    <i class="fas fa-qrcode"></i> QR Codes
+                <a href="#" class="nav-item" data-section="share-links">
+                    <i class="fas fa-share-alt"></i> Share Links
                 </a>
                 <a href="#" class="nav-item" data-section="settings">
                     <i class="fas fa-cog"></i> Settings
@@ -109,7 +109,7 @@
         <!-- Main Content -->
         <div class="main-content">
             <header class="main-header">
-                <h1 id="page-title">Dashboard</h1>
+                <h1 id="page-title" class="app-name-display">Dashboard</h1>
                 <div class="search-bar">
                     <i class="fas fa-search"></i>
                     <input type="text" id="search-input" placeholder="Search documents...">
@@ -155,7 +155,7 @@
                 <div class="upload-area royal-glass">
                     <i class="fas fa-cloud-upload-alt"></i>
                     <h3>Drop files here or click to upload</h3>
-                    <p id="file-size-info">High-speed chunked upload to Realtime DB (max 100MB)</p>
+                    <p id="file-size-info">Upload to Firebase Realtime DB (max 10MB)</p>
                     <p class="file-note">Supports: .ino, .cpp, .docx, .pdf, .jpg, .png, .mp4, etc.</p>
                     <input type="file" id="file-upload" multiple>
                     <div class="file-types">
@@ -261,10 +261,10 @@
                 <!-- Upload Tips -->
                 <div class="upload-tips royal-glass">
                     <h5><i class="fas fa-lightbulb"></i> Upload Tips</h5>
-                    <p>• Files are uploaded in chunks to Realtime Database</p>
-                    <p>• Large files are split into manageable chunks</p>
+                    <p>• Files are uploaded to Firebase Realtime Database</p>
+                    <p>• Maximum file size: 10MB</p>
                     <p>• Upload resumes automatically if interrupted</p>
-                    <p>• Multiple files upload in parallel (up to 3 at once)</p>
+                    <p>• Files are stored securely with your account</p>
                 </div>
             </section>
 
@@ -301,24 +301,37 @@
                 </div>
             </section>
 
-            <!-- QR Codes Section -->
-            <section id="qr-codes" class="content-section">
-                <div class="qr-generator royal-glass">
-                    <h3>Generate QR Code</h3>
-                    <select id="qr-file-select" class="qr-select">
-                        <option value="">Select a file</option>
+            <!-- Share Links Section -->
+            <section id="share-links" class="content-section">
+                <div class="share-generator royal-glass">
+                    <h3><i class="fas fa-share-alt"></i> Generate Share Link</h3>
+                    <p style="color: rgba(255,255,255,0.8); margin-bottom: 20px;">
+                        Create a shareable link for your files. Anyone with the link can download the file.
+                    </p>
+                    <select id="share-file-select" class="share-select">
+                        <option value="">Select a file to share</option>
                     </select>
-                    <button class="btn royal-btn" id="generate-qr">Generate QR</button>
+                    <button class="btn royal-btn" id="generate-share-link">
+                        <i class="fas fa-link"></i> Generate Share Link
+                    </button>
+                    <p style="font-size: 0.9rem; color: #ffd700; margin-top: 15px;">
+                        <i class="fas fa-info-circle"></i> Share links are active until you delete them
+                    </p>
                 </div>
                 
-                <div id="qr-display" class="qr-display">
-                    <!-- QR Code will be displayed here -->
+                <div id="share-display" class="share-display royal-glass">
+                    <h4><i class="fas fa-eye"></i> Share Link Preview</h4>
+                    <div id="share-preview-container">
+                        <p style="color: rgba(255,255,255,0.8); text-align: center;">
+                            Your share link will appear here after generation
+                        </p>
+                    </div>
                 </div>
                 
-                <div class="qr-list">
-                    <h3>Your QR Codes</h3>
-                    <div id="qr-codes-list" class="qr-grid">
-                        <!-- Generated QR codes will appear here -->
+                <div class="share-list royal-glass">
+                    <h3><i class="fas fa-history"></i> Your Generated Share Links</h3>
+                    <div id="share-links-list" class="share-grid">
+                        <!-- Generated share links will appear here -->
                     </div>
                 </div>
             </section>
@@ -343,15 +356,14 @@
                         <div class="file-size-control">
                             <label for="max-file-size">Max File Size (MB):</label>
                             <div class="range-container">
-                                <input type="range" id="max-file-size" min="1" max="100" value="1" class="size-slider">
+                                <input type="range" id="max-file-size" min="1" max="10" value="1" class="size-slider">
                                 <span id="size-value">1 MB</span>
                             </div>
                             <div class="size-presets">
                                 <button type="button" class="size-preset" data-size="1">1MB</button>
+                                <button type="button" class="size-preset" data-size="2">2MB</button>
                                 <button type="button" class="size-preset" data-size="5">5MB</button>
                                 <button type="button" class="size-preset" data-size="10">10MB</button>
-                                <button type="button" class="size-preset" data-size="50">50MB</button>
-                                <button type="button" class="size-preset" data-size="100">100MB</button>
                             </div>
                         </div>
                     </div>
@@ -361,11 +373,11 @@
                         <div class="upload-options">
                             <label for="chunk-size">Chunk Size:</label>
                             <select id="chunk-size" class="chunk-select">
-                                <option value="256" style="color: black;">256KB (Fastest)</option>
-                                <option value="512" selected style="color: black;">512KB (Recommended)</option>
-                                <option value="1024" style="color: black;">1MB (Stable)</option>
+                                <option value="100">100KB (Small files)</option>
+                                <option value="256" selected>256KB (Recommended)</option>
+                                <option value="512">512KB (Fast)</option>
                             </select>
-                            <p class="option-note">Smaller chunks = faster upload, more chunks</p>
+                            <p class="option-note">Smaller chunks = more reliable upload</p>
                         </div>
                     </div>
                     
@@ -373,16 +385,20 @@
                 </div>
                 
                 <div class="settings-card royal-glass">
-                    <h3><i class="fas fa-info-circle"></i> About Royal Vault</h3>
+                    <h3><i class="fas fa-info-circle"></i> About <span class="app-name-display">Royal Vault</span></h3>
                     <p>Premium document storage solution with:</p>
                     <ul>
-                        <li><i class="fas fa-check-circle"></i> High-speed chunked uploads to Realtime DB</li>
+                        <li><i class="fas fa-check-circle"></i> Upload to Firebase Realtime Database</li>
                         <li><i class="fas fa-check-circle"></i> Real-time internet speed monitoring</li>
-                        <li><i class="fas fa-check-circle"></i> Firebase Realtime Database storage</li>
-                        <li><i class="fas fa-check-circle"></i> QR code generation & download</li>
+                        <li><i class="fas fa-check-circle"></i> Shareable links for easy file sharing</li>
+                        <li><i class="fas fa-check-circle"></i> File preview & download</li>
                         <li><i class="fas fa-check-circle"></i> Persistent login sessions</li>
                         <li><i class="fas fa-check-circle"></i> Royal premium design</li>
                     </ul>
+                    <p style="margin-top: 20px; font-size: 0.9rem; color: rgba(255,255,255,0.7);">
+                        Version: <span id="app-version">1.0.0</span> | 
+                        Company: <span id="company-name">Royal Tech Solutions</span>
+                    </p>
                 </div>
             </section>
         </div>
@@ -400,7 +416,8 @@
             </div>
             <div class="modal-actions">
                 <button class="btn royal-btn" id="download-file">Download</button>
-                <button class="btn" id="generate-file-qr">Generate QR</button>
+                <button class="btn" id="generate-file-share">Generate Share Link</button>
+                <button class="btn btn-danger" id="delete-file">Delete</button>
                 <button class="btn btn-secondary" id="close-preview">Close</button>
             </div>
         </div>

@@ -3,17 +3,16 @@ class RoyalVaultApp {
         this.currentUser = null;
         this.files = [];
         this.currentSection = 'dashboard';
-        this.MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB default
-        this.DEFAULT_MAX_SIZE = 1 * 1024 * 1024;
-        this.MAX_ALLOWED_SIZE = 10 * 1024 * 1024; // 10MB max for Realtime DB
+        this.MAX_FILE_SIZE = (AppConfig.DEFAULT_MAX_SIZE || 1) * 1024 * 1024;
+        this.MAX_ALLOWED_SIZE = (AppConfig.MAX_ALLOWED_SIZE || 10) * 1024 * 1024;
         
         // Upload system variables
         this.uploadQueue = [];
         this.activeUploads = [];
         this.isUploading = false;
         this.isPaused = false;
-        this.chunkSize = 100 * 1024; // 100KB chunks for Realtime DB
-        this.maxParallelUploads = 2; // Reduced for Realtime DB
+        this.chunkSize = (AppConfig.DEFAULT_CHUNK_SIZE || 256) * 1024;
+        this.maxParallelUploads = AppConfig.MAX_PARALLEL_UPLOADS || 2;
         
         // Speed monitoring
         this.speedHistory = [];
@@ -31,7 +30,9 @@ class RoyalVaultApp {
         
         this.initializeEventListeners();
         this.checkAuthState();
-        this.startInternetSpeedTest();
+        if (AppConfig.ENABLE_SPEED_TEST) {
+            this.startInternetSpeedTest();
+        }
     }
     
     initializeEventListeners() {
@@ -67,8 +68,8 @@ class RoyalVaultApp {
         uploadArea.addEventListener('click', () => fileUpload.click());
         uploadArea.addEventListener('dragover', (e) => {
             e.preventDefault();
-            uploadArea.style.borderColor = '#00ff88';
-            uploadArea.style.background = 'rgba(0, 255, 136, 0.1)';
+            uploadArea.style.borderColor = AppConfig.SUCCESS_COLOR;
+            uploadArea.style.background = `rgba(${parseInt(AppConfig.SUCCESS_COLOR.slice(1, 3), 16)}, ${parseInt(AppConfig.SUCCESS_COLOR.slice(3, 5), 16)}, ${parseInt(AppConfig.SUCCESS_COLOR.slice(5, 7), 16)}, 0.1)`;
             uploadArea.style.transform = 'scale(1.02)';
         });
         
@@ -100,8 +101,8 @@ class RoyalVaultApp {
         // Settings
         document.getElementById('save-settings').addEventListener('click', () => this.updateProfile());
         
-        // QR Generation
-        document.getElementById('generate-qr').addEventListener('click', () => this.generateQRCode());
+        // Generate Share Link
+        document.getElementById('generate-share-link').addEventListener('click', () => this.generateShareLink());
         
         // Modal close buttons
         document.querySelectorAll('.close-modal, #close-preview').forEach(btn => {
@@ -114,10 +115,10 @@ class RoyalVaultApp {
         // Filter
         document.getElementById('filter-type').addEventListener('change', (e) => this.filterFiles(e.target.value));
         
-        // Generate QR from preview
-        document.getElementById('generate-file-qr').addEventListener('click', () => {
+        // Generate share link from preview
+        document.getElementById('generate-file-share').addEventListener('click', () => {
             const fileId = document.getElementById('preview-title').dataset.fileId;
-            if (fileId) this.generateFileQR(fileId);
+            if (fileId) this.generateFileShareLink(fileId);
         });
         
         // Download from preview
@@ -126,14 +127,19 @@ class RoyalVaultApp {
             if (fileId) this.downloadFile(fileId);
         });
         
+        // Delete from preview
+        document.getElementById('delete-file').addEventListener('click', () => {
+            const fileId = document.getElementById('preview-title').dataset.fileId;
+            if (fileId) this.deleteFile(fileId);
+        });
+        
         // File size slider
         const sizeSlider = document.getElementById('max-file-size');
         const sizeValue = document.getElementById('size-value');
         
         if (sizeSlider && sizeValue) {
             sizeSlider.addEventListener('input', (e) => {
-                const value = Math.min(10, e.target.value); // Max 10MB for Realtime DB
-                sizeSlider.value = value;
+                const value = e.target.value;
                 sizeValue.textContent = `${value} MB`;
                 
                 document.querySelectorAll('.size-preset').forEach(preset => {
@@ -148,7 +154,7 @@ class RoyalVaultApp {
         // Size preset buttons
         document.querySelectorAll('.size-preset').forEach(preset => {
             preset.addEventListener('click', (e) => {
-                const size = Math.min(10, parseInt(e.target.dataset.size)); // Max 10MB
+                const size = parseInt(e.target.dataset.size);
                 document.getElementById('max-file-size').value = size;
                 document.getElementById('size-value').textContent = `${size} MB`;
                 
@@ -166,9 +172,51 @@ class RoyalVaultApp {
         
         // Logout
         document.getElementById('logout-btn').addEventListener('click', () => this.logout());
+        
+        // Apply configuration
+        this.applyAppConfig();
+    }
+    
+    applyAppConfig() {
+        // Update app name and tagline
+        const appNameElements = document.querySelectorAll('.app-name-display');
+        appNameElements.forEach(el => {
+            el.textContent = AppConfig.APP_NAME;
+        });
+        
+        const taglineElements = document.querySelectorAll('.app-tagline-display');
+        taglineElements.forEach(el => {
+            el.textContent = AppConfig.APP_TAGLINE;
+        });
+        
+        // Update logo
+        const logoIcons = document.querySelectorAll('.app-logo');
+        logoIcons.forEach(icon => {
+            if (AppConfig.LOGO_TYPE === "image" && AppConfig.LOGO_IMAGE_URL) {
+                icon.innerHTML = `<img src="${AppConfig.LOGO_IMAGE_URL}" alt="${AppConfig.APP_NAME}" style="width: 40px; height: 40px;">`;
+            } else {
+                icon.innerHTML = `<i class="${AppConfig.LOGO_ICON}"></i>`;
+            }
+        });
+        
+        // Update colors in UI elements
+        document.querySelectorAll('.royal-gradient').forEach(el => {
+            el.style.background = `linear-gradient(135deg, ${AppConfig.PRIMARY_COLOR} 0%, ${AppConfig.SECONDARY_COLOR} 100%)`;
+        });
+        
+        document.querySelectorAll('.royal-btn').forEach(btn => {
+            btn.style.background = `linear-gradient(45deg, ${AppConfig.PRIMARY_COLOR} 0%, ${AppConfig.SECONDARY_COLOR} 100%)`;
+        });
+        
+        // Update file size info
+        const maxSizeMB = Math.round(this.MAX_FILE_SIZE / (1024 * 1024));
+        document.getElementById('file-size-info').textContent = 
+            `Upload to Firebase Realtime DB (max ${maxSizeMB}MB)`;
     }
     
     async startInternetSpeedTest() {
+        if (!AppConfig.ENABLE_SPEED_TEST) return;
+        
         const testImage = 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Google_2015_logo.svg/320px-Google_2015_logo.svg.png';
         const startTime = Date.now();
         
@@ -230,6 +278,8 @@ class RoyalVaultApp {
     }
     
     updateUploadStats() {
+        if (!AppConfig.ENABLE_FILE_STATS) return;
+        
         const now = Date.now();
         const recentSpeeds = this.speedHistory.filter(s => s.time > now - 2000);
         if (recentSpeeds.length > 0) {
@@ -289,9 +339,9 @@ class RoyalVaultApp {
             }
             
             // Check total size for Realtime DB limits
-            if (file.size > 10 * 1024 * 1024) {
+            if (file.size > this.MAX_ALLOWED_SIZE) {
                 this.showToast(
-                    `"${file.name}" is too large for Realtime DB. Max 10MB.`, 
+                    `"${file.name}" is too large. Max ${Math.round(this.MAX_ALLOWED_SIZE / (1024 * 1024))}MB.`, 
                     'error'
                 );
                 continue;
@@ -306,8 +356,7 @@ class RoyalVaultApp {
                 uploadedChunks: 0,
                 totalChunks: Math.ceil(file.size / this.chunkSize),
                 startTime: null,
-                uploadedBytes: 0,
-                chunksData: []
+                uploadedBytes: 0
             };
             
             this.uploadQueue.push(fileItem);
@@ -320,7 +369,7 @@ class RoyalVaultApp {
             this.updateQueueCount();
             this.showToast(`Added ${addedCount} file(s) to upload queue`, 'success');
             
-            if (!this.isUploading && !this.isPaused) {
+            if (!this.isUploading && !this.isPaused && AppConfig.AUTO_UPLOAD) {
                 this.processUploadQueue();
             }
         }
@@ -340,7 +389,7 @@ class RoyalVaultApp {
                 </div>
                 <div class="queue-file-details">
                     <div class="queue-file-name">${fileItem.file.name}</div>
-                    <div class="queue-file-size">${this.formatFileSize(fileItem.file.size)} (${fileItem.totalChunks} chunks)</div>
+                    <div class="queue-file-size">${this.formatFileSize(fileItem.file.size)}</div>
                 </div>
             </div>
             <div class="queue-status pending">Pending</div>
@@ -359,7 +408,7 @@ class RoyalVaultApp {
         if (fileItem.status === 'uploading') {
             const fileSize = queueItem.querySelector('.queue-file-size');
             if (fileSize) {
-                fileSize.textContent = `${this.formatFileSize(fileItem.uploadedBytes)} / ${this.formatFileSize(fileItem.file.size)} (${fileItem.uploadedChunks}/${fileItem.totalChunks})`;
+                fileSize.textContent = `${this.formatFileSize(fileItem.uploadedBytes)} / ${this.formatFileSize(fileItem.file.size)}`;
             }
         }
         
@@ -396,7 +445,7 @@ class RoyalVaultApp {
             fileItem.startTime = Date.now();
             this.activeUploads.push(fileItem);
             this.updateQueueItem(fileItem);
-            this.uploadFileToRealtimeDB(fileItem);
+            this.uploadFile(fileItem);
         }
         
         if (!this.statsInterval) {
@@ -404,7 +453,7 @@ class RoyalVaultApp {
         }
     }
     
-    async uploadFileToRealtimeDB(fileItem) {
+    async uploadFile(fileItem) {
         const file = fileItem.file;
         
         this.updateCurrentUploadDisplay(fileItem);
@@ -413,8 +462,26 @@ class RoyalVaultApp {
             // Read file as base64
             const base64Data = await this.readFileAsBase64(file);
             
+            // Calculate upload speed (simulated)
+            const startTime = Date.now();
+            const fileSizeKB = file.size / 1024;
+            
             // Upload to Realtime Database
             await this.saveFileToRealtimeDB(fileItem, base64Data);
+            
+            const endTime = Date.now();
+            const duration = (endTime - startTime) / 1000;
+            const speed = fileSizeKB / duration;
+            
+            this.speedHistory.push({
+                time: Date.now(),
+                speed: speed
+            });
+            
+            // Keep only recent 50 speed records
+            if (this.speedHistory.length > 50) {
+                this.speedHistory.shift();
+            }
             
             fileItem.status = 'completed';
             fileItem.progress = 100;
@@ -434,7 +501,7 @@ class RoyalVaultApp {
             console.error('Upload error:', error);
             fileItem.status = 'error';
             this.updateQueueItem(fileItem);
-            this.showToast(`Upload failed: ${file.name} - ${error.message}`, 'error');
+            this.showToast(`Upload failed: ${file.name}`, 'error');
         } finally {
             const index = this.activeUploads.indexOf(fileItem);
             if (index > -1) {
@@ -493,7 +560,7 @@ class RoyalVaultApp {
             data: base64Data,
             mimeType: file.type,
             uploadedAt: Date.now(),
-            chunks: 1, // Single chunk for small files
+            chunks: 1,
             compressed: false
         });
         
@@ -686,6 +753,8 @@ class RoyalVaultApp {
     }
     
     updateDashboardStats() {
+        if (!AppConfig.ENABLE_FILE_STATS) return;
+        
         const counts = { code: 0, document: 0, image: 0, video: 0, other: 0 };
         
         this.files.forEach(file => {
@@ -711,7 +780,7 @@ class RoyalVaultApp {
         if (recentFiles.length === 0) {
             recentFilesList.innerHTML = `
                 <div class="empty-state royal-glass" style="grid-column: 1/-1; text-align: center; padding: 40px;">
-                    <i class="fas fa-cloud-upload-alt" style="font-size: 3rem; color: #6a11cb; margin-bottom: 20px;"></i>
+                    <i class="fas fa-cloud-upload-alt" style="font-size: 3rem; color: ${AppConfig.PRIMARY_COLOR}; margin-bottom: 20px;"></i>
                     <h3>No files yet</h3>
                     <p>Upload your first file to get started</p>
                 </div>
@@ -800,6 +869,10 @@ class RoyalVaultApp {
     }
     
     getPreviewContent(file) {
+        if (!AppConfig.ENABLE_FILE_PREVIEW) {
+            return this.getFileInfoHtml(file);
+        }
+        
         let content = '';
         
         if (file.type === 'image' && file.mimeType && file.mimeType.startsWith('image/')) {
@@ -853,7 +926,7 @@ class RoyalVaultApp {
                     <strong>Uploaded:</strong> ${date}
                 </div>
                 <div class="preview-notice" style="margin-top: 20px; padding: 15px; background: rgba(255,215,0,0.1); border-radius: 10px;">
-                    <i class="fas fa-info-circle" style="color: #ffd700;"></i>
+                    <i class="fas fa-info-circle" style="color: ${AppConfig.ACCENT_COLOR};"></i>
                     <p style="margin: 10px 0 0 0; color: rgba(255,255,255,0.9);">
                         Preview not available for this file type. Click download to save the file.
                     </p>
@@ -891,71 +964,361 @@ class RoyalVaultApp {
         }
     }
     
-    async generateQR(file) {
-        const qrDisplay = document.getElementById('qr-display');
-        qrDisplay.innerHTML = '';
+    // DELETE FILE FUNCTION
+    async deleteFile(fileId) {
+        if (!confirm('Are you sure you want to delete this file? This action cannot be undone.')) {
+            return;
+        }
+        
+        const file = this.files.find(f => f.id === fileId);
+        if (!file) return;
         
         try {
-            // Create data URL for the file
-            const dataUrl = `data:${file.mimeType || 'application/octet-stream'};base64,${file.data}`;
+            // Delete from Firebase
+            await window.firebaseApp.db.ref(`users/${this.currentUser.uid}/files/${fileId}`).remove();
             
-            // Generate QR code
-            const typeNumber = 0;
-            const errorCorrectionLevel = 'L';
-            const qr = qrcode(typeNumber, errorCorrectionLevel);
-            qr.addData(dataUrl);
-            qr.make();
+            // Delete any associated share links
+            await this.deleteFileShares(fileId);
             
-            const qrImage = qr.createDataURL(10, 0);
+            // Remove from local array
+            this.files = this.files.filter(f => f.id !== fileId);
             
-            const qrContainer = document.createElement('div');
-            qrContainer.className = 'qr-item';
-            qrContainer.innerHTML = `
-                <h4>${this.truncateFileName(file.name, 20)}</h4>
-                <img src="${qrImage}" alt="QR Code" style="width:200px;height:200px; margin: 15px 0;">
-                <p style="color: rgba(255,255,255,0.8); margin-bottom: 15px;">Scan to download</p>
-                <button class="btn royal-btn download-qr-btn">
-                    <i class="fas fa-download"></i> Save QR Code
-                </button>
-            `;
+            // Close modal if open
+            this.closeModal();
             
-            qrDisplay.appendChild(qrContainer);
+            // Update UI
+            this.loadDocumentsTable();
+            this.loadRecentFiles();
+            this.updateDashboardStats();
             
-            qrContainer.querySelector('.download-qr-btn').addEventListener('click', () => {
-                this.downloadQR(qrImage, `${file.name}_qr.png`);
-            });
-            
-            // Save QR code to database
-            await this.saveQRCode(file, qrImage);
-            
-            this.showToast('QR code generated successfully!', 'success');
+            this.showToast(`Deleted: ${file.name}`, 'success');
         } catch (error) {
-            console.error('QR generation error:', error);
-            this.showToast('QR generation failed', 'error');
+            console.error('Delete error:', error);
+            this.showToast('Delete failed', 'error');
         }
     }
     
-    downloadQR(qrDataUrl, filename) {
-        const a = document.createElement('a');
-        a.href = qrDataUrl;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        this.showToast('QR code downloaded', 'success');
+    async deleteFileShares(fileId) {
+        try {
+            const sharesSnapshot = await window.firebaseApp.db.ref(`users/${this.currentUser.uid}/shares`).once('value');
+            if (sharesSnapshot.exists()) {
+                const deletePromises = [];
+                sharesSnapshot.forEach((shareSnapshot) => {
+                    const shareData = shareSnapshot.val();
+                    if (shareData.fileId === fileId) {
+                        deletePromises.push(
+                            window.firebaseApp.db.ref(`users/${this.currentUser.uid}/shares/${shareSnapshot.key}`).remove()
+                        );
+                    }
+                });
+                await Promise.all(deletePromises);
+            }
+        } catch (error) {
+            console.error('Error deleting shares:', error);
+        }
     }
     
-    async saveQRCode(file, qrDataUrl) {
+    // SHARE LINK GENERATION
+    async generateShare(file) {
+        if (!AppConfig.ENABLE_SHARING) {
+            this.showToast('File sharing is disabled', 'error');
+            return;
+        }
+        
+        const sharePreviewContainer = document.getElementById('share-preview-container');
+        
+        // Clear previous content
+        sharePreviewContainer.innerHTML = '';
+        
         try {
-            const qrId = 'qr_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-            await window.firebaseApp.db.ref(`users/${this.currentUser.uid}/qrcodes/${qrId}`).set({
+            // Create a shareable URL
+            const shareableUrl = `${window.location.origin}/share.html?file=${file.id}&user=${this.currentUser.uid}`;
+            
+            const shareDisplayContent = document.createElement('div');
+            shareDisplayContent.className = 'share-display-content';
+            shareDisplayContent.innerHTML = `
+                <div style="text-align: center;">
+                    <div style="width:100%; padding: 25px; background: rgba(${parseInt(AppConfig.PRIMARY_COLOR.slice(1, 3), 16)}, ${parseInt(AppConfig.PRIMARY_COLOR.slice(3, 5), 16)}, ${parseInt(AppConfig.PRIMARY_COLOR.slice(5, 7), 16)}, 0.2); border-radius: 15px; margin-bottom: 25px;">
+                        <i class="fas fa-link" style="font-size: 4rem; color: ${AppConfig.ACCENT_COLOR}; margin-bottom: 20px;"></i>
+                        <h4 style="color: white; margin: 15px 0 10px 0;">${this.truncateFileName(file.name, 25)}</h4>
+                        <div class="share-info" style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; margin-bottom: 20px; text-align: left;">
+                            <p style="font-size: 1rem; margin: 8px 0;"><strong>File:</strong> ${file.name}</p>
+                            <p style="font-size: 1rem; margin: 8px 0;"><strong>Type:</strong> ${this.getFileTypeLabel(file.type)}</p>
+                            <p style="font-size: 1rem; margin: 8px 0;"><strong>Size:</strong> ${this.formatFileSize(file.size)}</p>
+                            <p style="font-size: 1rem; margin: 8px 0; word-break: break-all;">
+                                <strong>Share Link:</strong><br>
+                                <span style="color: ${AppConfig.PRIMARY_COLOR}; font-size: 0.9rem; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; display: block; margin-top: 5px;">${shareableUrl}</span>
+                            </p>
+                        </div>
+                        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                            <button class="btn royal-btn copy-share-link-btn" style="flex: 1; min-width: 180px;">
+                                <i class="fas fa-copy"></i> Copy Link
+                            </button>
+                            <button class="btn btn-secondary test-share-btn" style="flex: 1; min-width: 180px;">
+                                <i class="fas fa-external-link-alt"></i> Test Link
+                            </button>
+                        </div>
+                        <p style="font-size: 0.9rem; color: rgba(255,255,255,0.7); margin-top: 20px;">
+                            <i class="fas fa-info-circle"></i> Share this link with anyone to give them access to download this file
+                        </p>
+                    </div>
+                </div>
+            `;
+            
+            sharePreviewContainer.appendChild(shareDisplayContent);
+            
+            // Add event listeners
+            shareDisplayContent.querySelector('.copy-share-link-btn').addEventListener('click', () => {
+                this.copyToClipboard(shareableUrl);
+                this.showToast('Share link copied to clipboard!', 'success');
+            });
+            
+            shareDisplayContent.querySelector('.test-share-btn').addEventListener('click', () => {
+                window.open(shareableUrl, '_blank');
+                this.showToast('Opening share link in new tab...', 'info');
+            });
+            
+            // Save share link to database
+            this.saveShareLink(file, shareableUrl);
+            
+            this.showToast('Share link generated successfully!', 'success');
+            
+        } catch (error) {
+            console.error('Share link generation error:', error);
+            this.showShareFallback(file);
+        }
+    }
+    
+    showShareFallback(file) {
+        const sharePreviewContainer = document.getElementById('share-preview-container');
+        sharePreviewContainer.innerHTML = '';
+        
+        const shareDisplayContent = document.createElement('div');
+        shareDisplayContent.className = 'share-display-content';
+        shareDisplayContent.innerHTML = `
+            <div style="text-align: center;">
+                <div style="width:100%; padding: 25px; background: rgba(${parseInt(AppConfig.PRIMARY_COLOR.slice(1, 3), 16)}, ${parseInt(AppConfig.PRIMARY_COLOR.slice(3, 5), 16)}, ${parseInt(AppConfig.PRIMARY_COLOR.slice(5, 7), 16)}, 0.2); border-radius: 15px; margin-bottom: 25px;">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 4rem; color: ${AppConfig.ACCENT_COLOR}; margin-bottom: 20px;"></i>
+                    <h4 style="color: white; margin: 15px 0 10px 0;">${this.truncateFileName(file.name, 25)}</h4>
+                    <div class="share-info" style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; margin-bottom: 20px; text-align: left;">
+                        <p style="font-size: 1rem; margin: 8px 0;"><strong>Note:</strong> Manual sharing</p>
+                        <p style="font-size: 1rem; margin: 8px 0;">
+                            Share this file using the direct download button.
+                        </p>
+                    </div>
+                    <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                        <button class="btn royal-btn download-direct-btn" style="flex: 1; min-width: 180px;">
+                            <i class="fas fa-download"></i> Download File
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        sharePreviewContainer.appendChild(shareDisplayContent);
+        
+        // Add event listeners
+        shareDisplayContent.querySelector('.download-direct-btn').addEventListener('click', () => {
+            this.downloadFile(file.id);
+        });
+    }
+    
+    async saveShareLink(file, shareableUrl) {
+        try {
+            const shareId = 'share_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            await window.firebaseApp.db.ref(`users/${this.currentUser.uid}/shares/${shareId}`).set({
                 fileId: file.id,
                 fileName: file.name,
-                qrDataUrl: qrDataUrl,
+                shareableUrl: shareableUrl,
                 generatedAt: Date.now()
             });
+            
+            // Also update share links list display
+            this.updateShareLinksList(file, shareableUrl, shareId);
+            
         } catch (error) {
-            console.error('Error saving QR code:', error);
+            console.error('Error saving share link:', error);
+        }
+    }
+    
+    updateShareLinksList(file, shareableUrl, shareId) {
+        const shareLinksList = document.getElementById('share-links-list');
+        
+        // Remove "no share links" message if present
+        const emptyMsg = shareLinksList.querySelector('.empty-state');
+        if (emptyMsg) {
+            emptyMsg.remove();
+        }
+        
+        const shareItem = document.createElement('div');
+        shareItem.className = 'share-item';
+        shareItem.id = `share-item-${shareId}`;
+        shareItem.innerHTML = `
+            <div class="share-item-header">
+                <h4>${this.truncateFileName(file.name, 15)}</h4>
+                <span class="share-date">${new Date().toLocaleDateString()}</span>
+            </div>
+            <div class="share-url-preview">
+                <span>${this.truncateText(shareableUrl, 30)}</span>
+            </div>
+            <div class="share-actions" style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="btn royal-btn copy-share-link-small" style="flex: 1; padding: 10px; font-size: 0.9rem;">
+                    <i class="fas fa-copy"></i> Copy
+                </button>
+                <button class="btn btn-secondary test-share-link" style="flex: 1; padding: 10px; font-size: 0.9rem;">
+                    <i class="fas fa-external-link-alt"></i> Test
+                </button>
+                <button class="btn btn-danger delete-share" style="flex: 1; padding: 10px; font-size: 0.9rem;">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+            </div>
+        `;
+        
+        shareLinksList.prepend(shareItem);
+        
+        // Add event listeners for the new share item
+        shareItem.querySelector('.copy-share-link-small').addEventListener('click', () => {
+            this.copyToClipboard(shareableUrl);
+            this.showToast('Share link copied to clipboard!', 'success');
+        });
+        
+        shareItem.querySelector('.test-share-link').addEventListener('click', () => {
+            window.open(shareableUrl, '_blank');
+            this.showToast('Opening share link...', 'info');
+        });
+        
+        shareItem.querySelector('.delete-share').addEventListener('click', async () => {
+            if (confirm('Delete this share link?')) {
+                try {
+                    await window.firebaseApp.db.ref(`users/${this.currentUser.uid}/shares/${shareId}`).remove();
+                    shareItem.remove();
+                    
+                    // If no more share links, show empty message
+                    if (shareLinksList.children.length === 0) {
+                        shareLinksList.innerHTML = `
+                            <div class="empty-state royal-glass" style="grid-column: 1/-1; text-align: center; padding: 40px;">
+                                <i class="fas fa-link" style="font-size: 3rem; color: ${AppConfig.PRIMARY_COLOR}; margin-bottom: 20px;"></i>
+                                <h3>No share links yet</h3>
+                                <p>Generate your first share link for a file</p>
+                            </div>
+                        `;
+                    }
+                    
+                    this.showToast('Share link deleted', 'info');
+                } catch (error) {
+                    console.error('Error deleting share link:', error);
+                    this.showToast('Delete failed', 'error');
+                }
+            }
+        });
+    }
+    
+    truncateText(text, maxLength) {
+        if (text.length <= maxLength) return text;
+        return text.substr(0, maxLength) + '...';
+    }
+    
+    copyToClipboard(text) {
+        try {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            return true;
+        } catch (error) {
+            console.error('Copy to clipboard error:', error);
+            return false;
+        }
+    }
+    
+    async loadShareLinks() {
+        if (!this.currentUser || !window.firebaseApp || !window.firebaseApp.db) return;
+        
+        try {
+            const snapshot = await window.firebaseApp.db.ref(`users/${this.currentUser.uid}/shares`).once('value');
+            const shareLinksList = document.getElementById('share-links-list');
+            shareLinksList.innerHTML = '';
+            
+            if (!snapshot.exists()) {
+                shareLinksList.innerHTML = `
+                    <div class="empty-state royal-glass" style="grid-column: 1/-1; text-align: center; padding: 40px;">
+                        <i class="fas fa-link" style="font-size: 3rem; color: ${AppConfig.PRIMARY_COLOR}; margin-bottom: 20px;"></i>
+                        <h3>No share links yet</h3>
+                        <p>Generate your first share link for a file</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            snapshot.forEach((childSnapshot) => {
+                const shareData = childSnapshot.val();
+                const shareItem = document.createElement('div');
+                shareItem.className = 'share-item';
+                shareItem.id = `share-item-${childSnapshot.key}`;
+                shareItem.innerHTML = `
+                    <div class="share-item-header">
+                        <h4>${this.truncateFileName(shareData.fileName, 15)}</h4>
+                        <span class="share-date">${new Date(shareData.generatedAt).toLocaleDateString()}</span>
+                    </div>
+                    <div class="share-url-preview">
+                        <span>${this.truncateText(shareData.shareableUrl, 30)}</span>
+                    </div>
+                    <div class="share-actions" style="display: flex; gap: 10px; margin-top: 15px;">
+                        <button class="btn royal-btn copy-share-link-small" style="flex: 1; padding: 10px; font-size: 0.9rem;">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                        <button class="btn btn-secondary test-share-link" style="flex: 1; padding: 10px; font-size: 0.9rem;">
+                            <i class="fas fa-external-link-alt"></i> Test
+                        </button>
+                        <button class="btn btn-danger delete-share" style="flex: 1; padding: 10px; font-size: 0.9rem;">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                `;
+                
+                shareLinksList.appendChild(shareItem);
+                
+                // Add event listeners
+                shareItem.querySelector('.copy-share-link-small').addEventListener('click', () => {
+                    this.copyToClipboard(shareData.shareableUrl);
+                    this.showToast('Share link copied to clipboard!', 'success');
+                });
+                
+                shareItem.querySelector('.test-share-link').addEventListener('click', () => {
+                    window.open(shareData.shareableUrl, '_blank');
+                    this.showToast('Opening share link...', 'info');
+                });
+                
+                shareItem.querySelector('.delete-share').addEventListener('click', async () => {
+                    if (confirm('Delete this share link?')) {
+                        try {
+                            await window.firebaseApp.db.ref(`users/${this.currentUser.uid}/shares/${childSnapshot.key}`).remove();
+                            shareItem.remove();
+                            
+                            // If no more share links, show empty message
+                            if (shareLinksList.children.length === 0) {
+                                shareLinksList.innerHTML = `
+                                    <div class="empty-state royal-glass" style="grid-column: 1/-1; text-align: center; padding: 40px;">
+                                        <i class="fas fa-link" style="font-size: 3rem; color: ${AppConfig.PRIMARY_COLOR}; margin-bottom: 20px;"></i>
+                                        <h3>No share links yet</h3>
+                                        <p>Generate your first share link for a file</p>
+                                    </div>
+                                `;
+                            }
+                            
+                            this.showToast('Share link deleted', 'info');
+                        } catch (error) {
+                            console.error('Error deleting share link:', error);
+                            this.showToast('Delete failed', 'error');
+                        }
+                    }
+                });
+            });
+            
+        } catch (error) {
+            console.error('Error loading share links:', error);
         }
     }
     
@@ -963,7 +1326,7 @@ class RoyalVaultApp {
         const newUsername = document.getElementById('new-username').value.trim();
         const newPassword = document.getElementById('new-password').value;
         const maxFileSizeMB = parseInt(document.getElementById('max-file-size').value) || 1;
-        const chunkSizeKB = parseInt(document.getElementById('chunk-size').value) || 512;
+        const chunkSizeKB = parseInt(document.getElementById('chunk-size').value) || 256;
         
         try {
             const newMaxFileSize = Math.min(maxFileSizeMB * 1024 * 1024, this.MAX_ALLOWED_SIZE);
@@ -989,8 +1352,8 @@ class RoyalVaultApp {
             }
             
             if (newPassword) {
-                if (newPassword.length < 6) {
-                    this.showToast('Password must be at least 6 characters', 'error');
+                if (newPassword.length < AppConfig.PASSWORD_MIN_LENGTH) {
+                    this.showToast(`Password must be at least ${AppConfig.PASSWORD_MIN_LENGTH} characters`, 'error');
                     return;
                 }
                 await this.currentUser.updatePassword(newPassword);
@@ -1023,8 +1386,7 @@ class RoyalVaultApp {
         const loginToggle = document.getElementById('login-toggle');
         const signupToggle = document.getElementById('signup-toggle');
         const authSubmit = document.getElementById('auth-submit');
-        const phoneInput = document.getElementById('phone');
-        const phoneGroup = phoneInput.closest('.input-group');
+        const phoneGroup = document.getElementById('phone-group');
         
         if (mode === 'login') {
             loginToggle.classList.add('active');
@@ -1099,7 +1461,7 @@ class RoyalVaultApp {
                 
                 // Create default settings
                 await window.firebaseApp.db.ref(`users/${this.currentUser.uid}/settings`).set({
-                    maxFileSize: this.DEFAULT_MAX_SIZE,
+                    maxFileSize: this.MAX_FILE_SIZE,
                     chunkSize: this.chunkSize,
                     createdAt: Date.now()
                 });
@@ -1128,7 +1490,7 @@ class RoyalVaultApp {
                     errorMessage = 'Invalid email format. Please check your username and phone number.';
                     break;
                 case 'auth/weak-password':
-                    errorMessage = 'Password should be at least 6 characters long.';
+                    errorMessage = `Password should be at least ${AppConfig.PASSWORD_MIN_LENGTH} characters long.`;
                     break;
                 case 'auth/user-not-found':
                     errorMessage = 'No account found. Please sign up first.';
@@ -1201,8 +1563,9 @@ class RoyalVaultApp {
         
         if (section === 'documents') {
             this.loadDocumentsTable();
-        } else if (section === 'qr-codes') {
-            this.populateQRFileSelect();
+        } else if (section === 'share-links') {
+            this.populateShareFileSelect();
+            this.loadShareLinks();
         }
     }
     
@@ -1213,8 +1576,8 @@ class RoyalVaultApp {
         if (this.files.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="5" style="text-align: center; padding: 40px;">
-                        <i class="fas fa-inbox" style="font-size: 3rem; color: #6a11cb; margin-bottom: 15px; display: block;"></i>
+                    <td colspan="6" style="text-align: center; padding: 40px;">
+                        <i class="fas fa-inbox" style="font-size: 3rem; color: ${AppConfig.PRIMARY_COLOR}; margin-bottom: 15px; display: block;"></i>
                         <h3>No documents yet</h3>
                         <p>Start by uploading some files</p>
                     </td>
@@ -1240,8 +1603,11 @@ class RoyalVaultApp {
                     <button class="action-btn download-btn" data-file-id="${file.id}" title="Download">
                         <i class="fas fa-download"></i>
                     </button>
-                    <button class="action-btn qr-btn" data-file-id="${file.id}" title="Generate QR">
-                        <i class="fas fa-qrcode"></i>
+                    <button class="action-btn share-btn" data-file-id="${file.id}" title="Generate Share Link">
+                        <i class="fas fa-share-alt"></i>
+                    </button>
+                    <button class="action-btn delete-btn" data-file-id="${file.id}" title="Delete File">
+                        <i class="fas fa-trash"></i>
                     </button>
                 </td>
             `;
@@ -1268,24 +1634,31 @@ class RoyalVaultApp {
             });
         });
         
-        tbody.querySelectorAll('.qr-btn').forEach(btn => {
+        tbody.querySelectorAll('.share-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                this.generateFileQR(btn.dataset.fileId);
+                this.generateFileShareLink(btn.dataset.fileId);
+            });
+        });
+        
+        tbody.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.deleteFile(btn.dataset.fileId);
             });
         });
     }
     
-    async generateFileQR(fileId) {
+    async generateFileShareLink(fileId) {
         const file = this.files.find(f => f.id === fileId);
         if (!file) return;
         
-        await this.generateQR(file);
-        this.switchSection('qr-codes');
+        await this.generateShare(file);
+        this.switchSection('share-links');
     }
     
-    async generateQRCode() {
-        const fileId = document.getElementById('qr-file-select').value;
+    async generateShareLink() {
+        const fileId = document.getElementById('share-file-select').value;
         if (!fileId) {
             this.showToast('Please select a file first', 'error');
             return;
@@ -1297,11 +1670,11 @@ class RoyalVaultApp {
             return;
         }
         
-        await this.generateQR(file);
+        await this.generateShare(file);
     }
     
-    populateQRFileSelect() {
-        const select = document.getElementById('qr-file-select');
+    populateShareFileSelect() {
+        const select = document.getElementById('share-file-select');
         select.innerHTML = '<option value="">Select a file</option>';
         
         this.files.forEach(file => {
@@ -1335,8 +1708,8 @@ class RoyalVaultApp {
         if (files.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="5" style="text-align: center; padding: 40px;">
-                        <i class="fas fa-search" style="font-size: 3rem; color: #6a11cb; margin-bottom: 15px; display: block;"></i>
+                    <td colspan="6" style="text-align: center; padding: 40px;">
+                        <i class="fas fa-search" style="font-size: 3rem; color: ${AppConfig.PRIMARY_COLOR}; margin-bottom: 15px; display: block;"></i>
                         <h3>No files found</h3>
                         <p>Try a different search term</p>
                     </td>
@@ -1364,8 +1737,11 @@ class RoyalVaultApp {
                     <button class="action-btn download-btn" data-file-id="${file.id}" title="Download">
                         <i class="fas fa-download"></i>
                     </button>
-                    <button class="action-btn qr-btn" data-file-id="${file.id}" title="Generate QR">
-                        <i class="fas fa-qrcode"></i>
+                    <button class="action-btn share-btn" data-file-id="${file.id}" title="Generate Share Link">
+                        <i class="fas fa-share-alt"></i>
+                    </button>
+                    <button class="action-btn delete-btn" data-file-id="${file.id}" title="Delete File">
+                        <i class="fas fa-trash"></i>
                     </button>
                 </td>
             `;

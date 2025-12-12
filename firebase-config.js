@@ -20,7 +20,7 @@ try {
 
 // Initialize Firebase services
 const auth = firebase.auth();
-const db = firebase.database(); // Using Realtime Database, NOT Storage
+const db = firebase.database();
 
 // Test database connection
 if (db) {

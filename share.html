@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="share-page-title">Royal Vault - Share File</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="firebase-config.js" defer></script>
+    <script src="config.js" defer></script>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-box royal-glass">
+            <div class="auth-header">
+                <h1><span class="app-logo"></span> <span id="app-name" class="app-name-display">Royal Vault</span></h1>
+                <p id="app-tagline" class="app-tagline-display">File Sharing</p>
+            </div>
+            
+            <div id="share-content" style="text-align: center;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 3rem; color: var(--primary-color, #6a11cb); margin-bottom: 20px;"></i>
+                <h3>Loading file...</h3>
+                <p>Please wait while we retrieve your file</p>
+            </div>
+            
+            <div id="share-error" style="display: none; text-align: center;">
+                <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: var(--error-color, #ff4757); margin-bottom: 20px;"></i>
+                <h3>File Not Found</h3>
+                <p>The requested file could not be found or has expired.</p>
+                <button class="btn royal-btn" onclick="window.location.href='index.html'" style="margin-top: 20px;">
+                    <i class="fas fa-home"></i> Go to Home
+                </button>
+            </div>
+            
+            <div id="share-success" style="display: none; text-align: center;">
+                <div class="app-logo" style="font-size: 4rem; margin-bottom: 20px; color: var(--primary-color, #6a11cb);"></div>
+                <h3 id="file-name"></h3>
+                <p id="file-info"></p>
+                <button class="btn royal-btn" id="download-shared-file" style="margin-top: 20px;">
+                    <i class="fas fa-download"></i> Download File
+                </button>
+                <div style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 10px;">
+                    <p style="font-size: 0.9rem; color: rgba(255,255,255,0.9); margin: 0;">
+                        <i class="fas fa-info-circle" style="color: var(--accent-color, #ffd700);"></i>
+                        This file was shared via <span id="company-name-display" class="app-name-display" style="font-weight: bold;">Royal Vault</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Apply configuration from config.js
+        document.addEventListener('DOMContentLoaded', function() {
+            // Wait for AppConfig to be loaded
+            setTimeout(() => {
+                if (window.AppConfig) {
+                    applyConfig();
+                }
+            }, 100);
+        });
+
+        function applyConfig() {
+            const config = window.AppConfig;
+            
+            // Set app name
+            const appNameElements = document.querySelectorAll('.app-name-display');
+            appNameElements.forEach(el => {
+                el.textContent = config.APP_NAME;
+            });
+            
+            // Set page title
+            document.getElementById('share-page-title').textContent = `${config.APP_NAME} - Share File`;
+            
+            // Set tagline
+            const taglineElements = document.querySelectorAll('.app-tagline-display');
+            taglineElements.forEach(el => {
+                el.textContent = config.APP_TAGLINE;
+            });
+            
+            // Apply logo
+            const logoElements = document.querySelectorAll('.app-logo');
+            logoElements.forEach(logo => {
+                if (config.LOGO_TYPE === "image" && config.LOGO_IMAGE_URL) {
+                    logo.innerHTML = `<img src="${config.LOGO_IMAGE_URL}" alt="${config.APP_NAME}" style="width: 50px; height: 50px; object-fit: contain;">`;
+                } else {
+                    logo.innerHTML = `<i class="${config.LOGO_ICON}" style="color: ${config.LOGO_COLOR || '#ffd700'};"></i>`;
+                }
+            });
+            
+            // Set company name
+            document.getElementById('company-name-display').textContent = config.APP_NAME;
+            
+            // Apply colors to CSS variables
+            document.documentElement.style.setProperty('--primary-color', config.PRIMARY_COLOR || '#6a11cb');
+            document.documentElement.style.setProperty('--secondary-color', config.SECONDARY_COLOR || '#2575fc');
+            document.documentElement.style.setProperty('--accent-color', config.ACCENT_COLOR || '#ffd700');
+            document.documentElement.style.setProperty('--success-color', config.SUCCESS_COLOR || '#00ff88');
+            document.documentElement.style.setProperty('--error-color', config.ERROR_COLOR || '#ff4757');
+            
+            // Update button colors
+            const royalBtns = document.querySelectorAll('.royal-btn');
+            royalBtns.forEach(btn => {
+                btn.style.background = `linear-gradient(45deg, ${config.PRIMARY_COLOR || '#6a11cb'}, ${config.SECONDARY_COLOR || '#2575fc'})`;
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const fileId = urlParams.get('file');
+            const userId = urlParams.get('user');
+            
+            if (!fileId || !userId) {
+                showError();
+                return;
+            }
+            
+            try {
+                // Get the shared file from Firebase
+                const db = firebase.database();
+                const fileSnapshot = await db.ref(`users/${userId}/files/${fileId}`).once('value');
+                
+                if (!fileSnapshot.exists()) {
+                    showError();
+                    return;
+                }
+                
+                const fileData = fileSnapshot.val();
+                
+                // Show file info
+                document.getElementById('file-name').textContent = fileData.name;
+                document.getElementById('file-info').textContent = 
+                    `${formatFileSize(fileData.size)} • ${new Date(fileData.uploadedAt).toLocaleDateString()}`;
+                
+                // Setup download button
+                document.getElementById('download-shared-file').addEventListener('click', () => {
+                    downloadFile(fileData);
+                });
+                
+                // Show success content
+                document.getElementById('share-content').style.display = 'none';
+                document.getElementById('share-success').style.display = 'block';
+                
+            } catch (error) {
+                console.error('Share error:', error);
+                showError();
+            }
+        });
+        
+        function showError() {
+            document.getElementById('share-content').style.display = 'none';
+            document.getElementById('share-error').style.display = 'block';
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        function downloadFile(fileData) {
+            try {
+                const byteCharacters = atob(fileData.data);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], { type: fileData.mimeType || 'application/octet-stream' });
+                
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileData.name;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                
+                // Show success message with app name
+                const appName = window.AppConfig ? window.AppConfig.APP_NAME : 'Royal Vault';
+                alert(`Download started: ${fileData.name}\n\nShared via ${appName}`);
+            } catch (error) {
+                console.error('Download error:', error);
+                alert('Download failed. Please try again.');
+            }
+        }
+        
+        // Apply configuration after DOM is loaded
+        setTimeout(applyConfig, 500);
+    </script>
+</body>
+</html>
