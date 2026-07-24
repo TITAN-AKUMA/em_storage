@@ -1,644 +1,279 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Cricket Scoreboard | 2 Teams Battle</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>XO Game</title>
     <style>
-        * {
-            box-sizing: border-box;
-            font-family: 'Segoe UI', 'Poppins', system-ui, -apple-system, 'Roboto', sans-serif;
-        }
-
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            background: linear-gradient(145deg, #1a472a 0%, #0e2a1a 100%);
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(145deg, #0b1120, #1a2332);
+            color: #e8edf5;
         }
-
-        /* main match container */
-        .match-container {
-            max-width: 1400px;
-            width: 100%;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(2px);
+        .container {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(12px);
+            padding: 2.5rem 2rem 2rem;
             border-radius: 3rem;
-            padding: 1.5rem;
-            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.3), inset 0 1px 2px rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.08);
+            text-align: center;
+            width: 400px;
+            border: 1px solid rgba(255,255,255,0.06);
         }
-
         h1 {
-            text-align: center;
-            margin: 0 0 0.5rem 0;
-            font-size: 2.4rem;
-            letter-spacing: 2px;
-            background: linear-gradient(135deg, #F9E0A0, #FFD966);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-        }
-
-        .sub {
-            text-align: center;
-            color: #c9e9c0;
             font-weight: 500;
-            margin-bottom: 2rem;
-            font-style: italic;
-        }
-
-        /* two team columns */
-        .scoreboard {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 2rem;
-            justify-content: center;
-            margin-bottom: 2rem;
-        }
-
-        .team-card {
-            flex: 1;
-            min-width: 300px;
-            background: #fef9e6;
-            background: linear-gradient(135deg, #fff9ef, #fff2e0);
-            border-radius: 2rem;
-            padding: 1.3rem 1.2rem;
-            box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.4);
-            transition: all 0.2s ease;
-            border: 1px solid rgba(255,215,130,0.6);
-        }
-
-        .team-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            border-bottom: 3px solid #f6b83e;
-            margin-bottom: 1rem;
-            padding-bottom: 0.5rem;
-            flex-wrap: wrap;
-        }
-
-        .team-name {
-            font-size: 1.9rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, #2c5e2a, #1f4b1c);
+            font-size: 2.2rem;
+            letter-spacing: 4px;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #a0c0ff, #f9a8d4);
             -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            letter-spacing: -0.5px;
+            -webkit-text-fill-color: transparent;
         }
-
-        .inning-status {
-            font-size: 0.8rem;
-            background: #e9ecef;
-            padding: 0.2rem 0.7rem;
-            border-radius: 40px;
-            font-weight: bold;
-            color: #2d3748;
-        }
-
-        .inning-status.completed {
-            background: #dc3545;
-            color: white;
-        }
-
-        .score-row {
-            background: #1e2a2e;
-            border-radius: 1.5rem;
-            padding: 0.8rem 1rem;
-            margin: 1rem 0;
-            color: white;
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .total-score {
-            font-size: 2.4rem;
-            font-weight: 800;
-            font-family: monospace;
-            letter-spacing: 2px;
-        }
-
-        .wickets {
-            font-size: 1.4rem;
-            font-weight: 600;
-            background: #0f172a;
-            padding: 0.2rem 0.7rem;
-            border-radius: 2rem;
-        }
-
-        .overs-detail {
-            font-size: 1rem;
-            background: #2d3e3f;
-            padding: 0.2rem 0.8rem;
-            border-radius: 2rem;
-        }
-
-        .stats-grid {
-            display: flex;
-            justify-content: space-between;
-            background: #f1e7d3;
-            padding: 0.6rem 1rem;
-            border-radius: 1rem;
-            margin: 1rem 0;
-            font-weight: 600;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .stat-item {
-            background: white;
-            padding: 0.2rem 0.8rem;
-            border-radius: 30px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-
-        .button-panel {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            margin: 1rem 0;
-            justify-content: center;
-        }
-
-        .cric-btn {
-            background: #1e4668;
-            border: none;
-            color: white;
+        .turn-indicator {
             font-size: 1.2rem;
-            font-weight: bold;
-            padding: 8px 18px;
-            border-radius: 60px;
-            cursor: pointer;
-            transition: 0.1s linear;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-            font-family: monospace;
-            min-width: 65px;
-        }
-
-        .cric-btn:active {
-            transform: scale(0.96);
-        }
-
-        .cric-btn.run-btn {
-            background: #2b7a3e;
-        }
-        .cric-btn.run-btn:hover { background: #1e5e30; }
-        .cric-btn.wide-btn {
-            background: #e68a2e;
-        }
-        .cric-btn.wide-btn:hover { background: #c96f1a; }
-        .cric-btn.nb-btn {
-            background: #9c6ade;
-        }
-        .cric-btn.nb-btn:hover { background: #7f4fc9; }
-        .cric-btn.wicket-btn {
-            background: #b91c1c;
-        }
-        .cric-btn.wicket-btn:hover { background: #991b1b; }
-        .cric-btn.action-btn {
-            background: #2c3e50;
-            font-size: 0.9rem;
-        }
-        .cric-btn:disabled {
-            opacity: 0.5;
-            transform: none;
-            cursor: not-allowed;
-        }
-
-        .team-actions {
-            display: flex;
-            gap: 12px;
-            justify-content: space-between;
-            margin-top: 12px;
-        }
-
-        .reset-btn {
-            background: #4a5b6e;
-        }
-
-        .winner-area {
-            background: #0a1f12e0;
-            border-radius: 3rem;
-            padding: 1rem;
-            text-align: center;
-            margin-top: 1rem;
-            backdrop-filter: blur(8px);
-        }
-
-        .winner-text {
-            font-size: 1.8rem;
-            font-weight: 800;
-            background: gold;
+            margin-bottom: 1.5rem;
+            background: rgba(0,0,0,0.3);
+            padding: 0.5rem 1rem;
+            border-radius: 40px;
             display: inline-block;
-            padding: 0.4rem 1.8rem;
-            border-radius: 60px;
-            color: #1e3a2f;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .turn-indicator span {
+            font-weight: 700;
+            color: #facc15;
+        }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin: 1.2rem 0;
+        }
+        .cell {
+            background: rgba(255,255,255,0.05);
+            aspect-ratio: 1 / 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            font-weight: 600;
+            border-radius: 24px;
+            cursor: pointer;
+            transition: 0.2s ease;
+            box-shadow: 0 8px 0 rgba(0,0,0,0.3), inset 0 2px 4px rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .cell:hover { background: rgba(255,255,255,0.12); transform: scale(1.02); }
+        .cell:active { transform: scale(0.95); }
+        .cell.x { color: #60a5fa; text-shadow: 0 0 20px #3b82f680; }
+        .cell.o { color: #f472b6; text-shadow: 0 0 20px #ec489980; }
+        .status {
+            font-size: 1.1rem;
+            min-height: 3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.8rem 0 1.2rem;
+            background: rgba(0,0,0,0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 40px;
+            border: 1px solid rgba(255,255,255,0.04);
+        }
+        .status.win { color: #4ade80; }
+        .status.draw { color: #facc15; }
+        button {
+            background: rgba(255,255,255,0.07);
+            border: none;
+            padding: 0.8rem 2rem;
+            border-radius: 40px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #e8edf5;
+            cursor: pointer;
+            transition: 0.25s ease;
+            border: 1px solid rgba(255,255,255,0.06);
             letter-spacing: 1px;
         }
-
-        .global-reset {
+        button:hover { background: rgba(255,255,255,0.15); transform: scale(1.02); }
+        button:active { transform: scale(0.96); }
+        .score {
             display: flex;
-            justify-content: center;
-            margin-top: 1rem;
-        }
-
-        .global-reset button {
-            background: #dcb14a;
-            border: none;
-            font-weight: bold;
-            font-size: 1.2rem;
-            padding: 10px 30px;
+            justify-content: space-between;
+            margin-top: 1.2rem;
+            font-size: 0.95rem;
+            background: rgba(0,0,0,0.2);
+            padding: 0.6rem 1.2rem;
             border-radius: 40px;
-            cursor: pointer;
-            color: #1e2f2a;
+            border: 1px solid rgba(255,255,255,0.04);
         }
-
-        footer {
-            text-align: center;
-            margin-top: 1rem;
-            color: #d6d6a0;
-            font-size: 0.75rem;
-        }
-
-        @media (max-width: 760px) {
-            .team-card { min-width: 280px; }
-            .cric-btn { padding: 6px 12px; font-size: 1rem; min-width: 55px; }
-            .total-score { font-size: 1.8rem; }
-        }
+        .score span { font-weight: 700; }
+        .score .x-score { color: #60a5fa; }
+        .score .o-score { color: #f472b6; }
+        .score .draw-score { color: #facc15; }
     </style>
 </head>
 <body>
+    <div class="container">
+        <h1>✦ XO ✦</h1>
+        <div class="turn-indicator">Turn: <span id="turnDisplay">X</span></div>
 
-<div class="match-container">
-    <h1>🏏 CRICKET SCOREKEEPER 🏏</h1>
-    <div class="sub">⚡ Two Teams | Real-time Runs, Wickets, Extras | Declare Winner ⚡</div>
-
-    <div class="scoreboard" id="scoreboardRoot">
-        <!-- Team A section -->
-        <div class="team-card" id="teamACard">
-            <div class="team-header">
-                <span class="team-name">🏆 TEAM A</span>
-                <span class="inning-status" id="teamAStatus">🟢 Batting</span>
-            </div>
-            <div class="score-row">
-                <span class="total-score" id="teamATotal">0</span>
-                <span class="wickets" id="teamAWickets">0</span>
-                <span class="overs-detail" id="teamAOvers">0.0 ov</span>
-            </div>
-            <div class="stats-grid">
-                <span class="stat-item">🎯 Runs (bat): <strong id="teamABatRuns">0</strong></span>
-                <span class="stat-item">📏 Extras: <strong id="teamAExtras">0</strong> (W:<span id="teamAWideCount">0</span> NB:<span id="teamANBCount">0</span>)</span>
-                <span class="stat-item">⚡ Balls: <span id="teamABalls">0</span></span>
-            </div>
-            <div class="button-panel">
-                <button class="cric-btn run-btn" data-team="A" data-run="6">6</button>
-                <button class="cric-btn run-btn" data-team="A" data-run="4">4</button>
-                <button class="cric-btn run-btn" data-team="A" data-run="3">3</button>
-                <button class="cric-btn run-btn" data-team="A" data-run="2">2</button>
-                <button class="cric-btn run-btn" data-team="A" data-run="1">1</button>
-                <button class="cric-btn wide-btn" data-team="A" data-action="wide">Wide</button>
-                <button class="cric-btn nb-btn" data-team="A" data-action="noball">NB</button>
-                <button class="cric-btn wicket-btn" data-team="A" data-action="wicket">Wicket</button>
-            </div>
-            <div class="team-actions">
-                <button class="cric-btn action-btn reset-team" data-team="A">🔄 Reset Team A</button>
-                <button class="cric-btn action-btn end-innings" data-team="A">⏹️ End Innings</button>
-            </div>
+        <div class="board" id="board">
+            <!-- 9 cells will be injected by JS -->
         </div>
 
-        <!-- Team B section -->
-        <div class="team-card" id="teamBCard">
-            <div class="team-header">
-                <span class="team-name">⚔️ TEAM B</span>
-                <span class="inning-status" id="teamBStatus">🟢 Batting</span>
-            </div>
-            <div class="score-row">
-                <span class="total-score" id="teamBTotal">0</span>
-                <span class="wickets" id="teamBWickets">0</span>
-                <span class="overs-detail" id="teamBOvers">0.0 ov</span>
-            </div>
-            <div class="stats-grid">
-                <span class="stat-item">🎯 Runs (bat): <strong id="teamBBatRuns">0</strong></span>
-                <span class="stat-item">📏 Extras: <strong id="teamBExtras">0</strong> (W:<span id="teamBWideCount">0</span> NB:<span id="teamBNBCount">0</span>)</span>
-                <span class="stat-item">⚡ Balls: <span id="teamBBalls">0</span></span>
-            </div>
-            <div class="button-panel">
-                <button class="cric-btn run-btn" data-team="B" data-run="6">6</button>
-                <button class="cric-btn run-btn" data-team="B" data-run="4">4</button>
-                <button class="cric-btn run-btn" data-team="B" data-run="3">3</button>
-                <button class="cric-btn run-btn" data-team="B" data-run="2">2</button>
-                <button class="cric-btn run-btn" data-team="B" data-run="1">1</button>
-                <button class="cric-btn wide-btn" data-team="B" data-action="wide">Wide</button>
-                <button class="cric-btn nb-btn" data-team="B" data-action="noball">NB</button>
-                <button class="cric-btn wicket-btn" data-team="B" data-action="wicket">Wicket</button>
-            </div>
-            <div class="team-actions">
-                <button class="cric-btn action-btn reset-team" data-team="B">🔄 Reset Team B</button>
-                <button class="cric-btn action-btn end-innings" data-team="B">⏹️ End Innings</button>
-            </div>
+        <div class="status" id="status">Player X's turn</div>
+        <button id="resetBtn">↻ New Game</button>
+
+        <div class="score">
+            <span>X <span class="x-score" id="scoreX">0</span></span>
+            <span>Draw <span class="draw-score" id="scoreDraw">0</span></span>
+            <span>O <span class="o-score" id="scoreO">0</span></span>
         </div>
     </div>
 
-    <div class="winner-area" id="winnerArea">
-        <span id="winnerMessage" class="winner-text">🏁 WAITING FOR RESULT 🏁</span>
-    </div>
-    <div class="global-reset">
-        <button id="globalResetBtn">🔥 NEW MATCH (RESET BOTH) 🔥</button>
-    </div>
-    <footer>Click runs • Wide (+1 run) • NB (+1 run) • Wicket (increases balls) • Overs count legal deliveries only</footer>
-</div>
+    <script>
+        (function() {
+            // ----- Game State -----
+            const boardEl = document.getElementById('board');
+            const statusEl = document.getElementById('status');
+            const turnDisplay = document.getElementById('turnDisplay');
+            const resetBtn = document.getElementById('resetBtn');
 
-<script>
-    // ------------------- DATA STATE FOR TWO TEAMS -------------------
-    const teamState = {
-        A: {
-            runsBat: 0,       // runs scored from 1,2,3,4,6
-            wickets: 0,
-            legalBalls: 0,    // deliveries (runs + wicket balls, excludes wide & nb)
-            wides: 0,
-            noBalls: 0,
-            inningsEnded: false,
-        },
-        B: {
-            runsBat: 0,
-            wickets: 0,
-            legalBalls: 0,
-            wides: 0,
-            noBalls: 0,
-            inningsEnded: false,
-        }
-    };
+            const scoreXEl = document.getElementById('scoreX');
+            const scoreOEl = document.getElementById('scoreO');
+            const scoreDrawEl = document.getElementById('scoreDraw');
 
-    // Helper: compute total runs for a team (bat runs + wide runs + noBall runs)
-    function getTotalRuns(team) {
-        const st = teamState[team];
-        return st.runsBat + st.wides + st.noBalls;
-    }
+            let board = Array(9).fill(null);
+            let currentPlayer = 'X';       // 'X' always starts
+            let gameActive = true;
+            let scores = { X: 0, O: 0, draw: 0 };
 
-    // Helper: check if innings is effectively over (wickets==10 or manually ended)
-    function isInningsActive(team) {
-        const st = teamState[team];
-        if (st.inningsEnded) return false;
-        if (st.wickets >= 10) return false;
-        return true;
-    }
+            // Win patterns (8 lines)
+            const WIN_PATTERNS = [
+                [0,1,2], [3,4,5], [6,7,8],  // rows
+                [0,3,6], [1,4,7], [2,5,8],  // columns
+                [0,4,8], [2,4,6]            // diagonals
+            ];
 
-    // Update Overs display (from legal balls)
-    function formatOvers(balls) {
-        const overs = Math.floor(balls / 6);
-        const remBalls = balls % 6;
-        return `${overs}.${remBalls}`;
-    }
-
-    // Refresh UI for specific team
-    function refreshTeamUI(team) {
-        const st = teamState[team];
-        const total = getTotalRuns(team);
-        const oversDisplay = formatOvers(st.legalBalls);
-        const extrasTotal = st.wides + st.noBalls;
-
-        // DOM elements
-        document.getElementById(`team${team}Total`).innerText = total;
-        document.getElementById(`team${team}Wickets`).innerText = st.wickets;
-        document.getElementById(`team${team}Overs`).innerText = `${oversDisplay} ov`;
-        document.getElementById(`team${team}Balls`).innerText = st.legalBalls;
-        document.getElementById(`team${team}BatRuns`).innerText = st.runsBat;
-        document.getElementById(`team${team}Extras`).innerText = extrasTotal;
-        document.getElementById(`team${team}WideCount`).innerText = st.wides;
-        document.getElementById(`team${team}NBCount`).innerText = st.noBalls;
-
-        // Update inning status badge
-        const statusSpan = document.getElementById(`team${team}Status`);
-        const isActive = isInningsActive(team);
-        if (!isActive) {
-            statusSpan.innerHTML = '🔴 INNINGS ENDED';
-            statusSpan.classList.add('completed');
-        } else {
-            statusSpan.innerHTML = '🟢 Batting';
-            statusSpan.classList.remove('completed');
-        }
-
-        // Enable/Disable buttons based on innings active
-        const teamCard = document.getElementById(`team${team}Card`);
-        const allBtns = teamCard.querySelectorAll('.button-panel button');
-        allBtns.forEach(btn => {
-            if (!isActive) {
-                btn.disabled = true;
-            } else {
-                // additionally if wickets already 10 (but isActive handles it)
-                btn.disabled = false;
+            // ----- Render Board -----
+            function renderBoard() {
+                boardEl.innerHTML = '';
+                for (let i = 0; i < 9; i++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell');
+                    if (board[i] === 'X') cell.classList.add('x');
+                    if (board[i] === 'O') cell.classList.add('o');
+                    cell.textContent = board[i] || '';
+                    cell.dataset.index = i;
+                    cell.addEventListener('click', handleCellClick);
+                    boardEl.appendChild(cell);
+                }
+                turnDisplay.textContent = currentPlayer;
             }
-        });
-        // also disable end innings if already ended
-        const endBtn = teamCard.querySelector('.end-innings');
-        if (!isActive) {
-            endBtn.disabled = true;
-        } else {
-            endBtn.disabled = false;
-        }
-    }
 
-    // Global winner determination (call after any score/wicket/end change)
-    function updateWinner() {
-        const teamAActive = isInningsActive('A');
-        const teamBActive = isInningsActive('B');
-        const bothEnded = (!teamAActive && !teamBActive);
-        
-        const winnerMsgSpan = document.getElementById('winnerMessage');
-        if (!bothEnded) {
-            if (!teamAActive && teamBActive) {
-                winnerMsgSpan.innerHTML = `⏳ TEAM A finished • TEAM B batting • wait for result ⏳`;
-                winnerMsgSpan.style.background = "#fed7aa";
-                winnerMsgSpan.style.color = "#5e3a1c";
-            } else if (teamAActive && !teamBActive) {
-                winnerMsgSpan.innerHTML = `⏳ TEAM B finished • TEAM A batting • wait for result ⏳`;
-                winnerMsgSpan.style.background = "#fed7aa";
-                winnerMsgSpan.style.color = "#5e3a1c";
-            } else {
-                winnerMsgSpan.innerHTML = `🏏 MATCH IN PROGRESS • COMPLETE BOTH INNINGS 🏏`;
-                winnerMsgSpan.style.background = "#eab308";
-                winnerMsgSpan.style.color = "#2d2b1f";
+            // ----- Check Winner -----
+            function checkWinner() {
+                for (const pattern of WIN_PATTERNS) {
+                    const [a,b,c] = pattern;
+                    if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                        return board[a]; // 'X' or 'O'
+                    }
+                }
+                return null;
             }
-            return;
-        }
-        
-        // both ended, compare totals
-        const totalA = getTotalRuns('A');
-        const totalB = getTotalRuns('B');
-        if (totalA > totalB) {
-            winnerMsgSpan.innerHTML = `🏆🏆 TEAM A WINS by ${totalA - totalB} runs! 🏆🏆`;
-            winnerMsgSpan.style.background = "gold";
-            winnerMsgSpan.style.color = "#1e3a2f";
-        } else if (totalB > totalA) {
-            winnerMsgSpan.innerHTML = `🏆🏆 TEAM B WINS by ${totalB - totalA} runs! 🏆🏆`;
-            winnerMsgSpan.style.background = "gold";
-            winnerMsgSpan.style.color = "#1e3a2f";
-        } else {
-            winnerMsgSpan.innerHTML = `🤝 TIE! Both teams finish on ${totalA} runs. 🤝`;
-            winnerMsgSpan.style.background = "#cbd5e0";
-            winnerMsgSpan.style.color = "#1e293b";
-        }
-    }
 
-    // core action handler
-    function handleAction(team, actionType, runValue = null) {
-        const st = teamState[team];
-        // check if innings is active globally
-        if (!isInningsActive(team)) {
-            return; // no action allowed
-        }
-        
-        // ---- RUNS (1,2,3,4,6) ----
-        if (actionType === 'run') {
-            const runs = parseInt(runValue);
-            if (isNaN(runs)) return;
-            st.runsBat += runs;
-            st.legalBalls += 1;    // each run ball counts as legal delivery
-            refreshTeamUI(team);
-            updateWinner();
-            return;
-        }
-        
-        // ---- WIDE ----
-        if (actionType === 'wide') {
-            st.wides += 1;          // extra runs
-            // wide does NOT increment legal balls
-            refreshTeamUI(team);
-            updateWinner();
-            return;
-        }
-        
-        // ---- NO BALL ----
-        if (actionType === 'noball') {
-            st.noBalls += 1;        // extra run
-            // no ball does NOT increase legal balls count
-            refreshTeamUI(team);
-            updateWinner();
-            return;
-        }
-        
-        // ---- WICKET ----
-        if (actionType === 'wicket') {
-            if (st.wickets >= 10) return;   // already all out
-            st.wickets += 1;
-            st.legalBalls += 1;   // wicket delivery is a legal ball
-            // after wicket, if wickets becomes 10, innings ends automatically
-            if (st.wickets >= 10) {
-                st.inningsEnded = true;
+            function isBoardFull() {
+                return board.every(cell => cell !== null);
             }
-            refreshTeamUI(team);
-            updateWinner();
-            return;
-        }
-    }
-    
-    // End innings manually
-    function endInningsManually(team) {
-        const st = teamState[team];
-        if (st.inningsEnded) return;
-        st.inningsEnded = true;
-        refreshTeamUI(team);
-        updateWinner();
-    }
-    
-    // Reset specific team (fully fresh)
-    function resetTeam(team) {
-        teamState[team] = {
-            runsBat: 0,
-            wickets: 0,
-            legalBalls: 0,
-            wides: 0,
-            noBalls: 0,
-            inningsEnded: false,
-        };
-        refreshTeamUI(team);
-        updateWinner();
-    }
-    
-    // reset both teams (new match)
-    function resetMatch() {
-        resetTeam('A');
-        resetTeam('B');
-        // additional flush winner display to neutral
-        updateWinner();
-    }
-    
-    // ------------------- EVENT LISTENERS -------------------
-    function bindEvents() {
-        // 1) Runs & special buttons using delegation (global)
-        const container = document.querySelector('.scoreboard');
-        
-        container.addEventListener('click', (e) => {
-            const btn = e.target.closest('.button-panel button');
-            if (!btn) return;
-            
-            const teamAttr = btn.getAttribute('data-team');
-            if (!teamAttr) return;
-            const team = teamAttr; // 'A' or 'B'
-            
-            // run type
-            const runVal = btn.getAttribute('data-run');
-            if (runVal !== null) {
-                handleAction(team, 'run', runVal);
-                return;
+
+            // ----- Update Status & Scores -----
+            function updateGameStatus(winner) {
+                if (winner) {
+                    gameActive = false;
+                    statusEl.textContent = `🏆 Player ${winner} wins!`;
+                    statusEl.className = 'status win';
+                    scores[winner] += 1;
+                    updateScoreDisplay();
+                } else if (isBoardFull()) {
+                    gameActive = false;
+                    statusEl.textContent = `🤝 It's a draw!`;
+                    statusEl.className = 'status draw';
+                    scores.draw += 1;
+                    updateScoreDisplay();
+                } else {
+                    statusEl.textContent = `Player ${currentPlayer}'s turn`;
+                    statusEl.className = 'status';
+                }
             }
-            
-            const action = btn.getAttribute('data-action');
-            if (action === 'wide') {
-                handleAction(team, 'wide');
-            } else if (action === 'noball') {
-                handleAction(team, 'noball');
-            } else if (action === 'wicket') {
-                handleAction(team, 'wicket');
+
+            function updateScoreDisplay() {
+                scoreXEl.textContent = scores.X;
+                scoreOEl.textContent = scores.O;
+                scoreDrawEl.textContent = scores.draw;
             }
-        });
-        
-        // End innings buttons
-        const endBtns = document.querySelectorAll('.end-innings');
-        endBtns.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const team = btn.getAttribute('data-team');
-                if (team) endInningsManually(team);
-            });
-        });
-        
-        // Reset team individual buttons
-        const resetTeamBtns = document.querySelectorAll('.reset-team');
-        resetTeamBtns.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const team = btn.getAttribute('data-team');
-                if (team) resetTeam(team);
-            });
-        });
-        
-        // Global reset match
-        const globalReset = document.getElementById('globalResetBtn');
-        if (globalReset) {
-            globalReset.addEventListener('click', () => {
-                resetMatch();
-            });
-        }
-    }
-    
-    // initial render
-    function initialRender() {
-        refreshTeamUI('A');
-        refreshTeamUI('B');
-        updateWinner();
-        bindEvents();
-        // extra: check if any buttons initially disabled if innings ended (false by default)
-    }
-    
-    // run on page load
-    window.addEventListener('DOMContentLoaded', initialRender);
-</script>
+
+            // ----- Cell Click Handler -----
+            function handleCellClick(e) {
+                const index = parseInt(e.currentTarget.dataset.index, 10);
+
+                // Ignore if game over, cell taken, or invalid
+                if (!gameActive) return;
+                if (board[index] !== null) return;
+
+                // Place mark
+                board[index] = currentPlayer;
+                renderBoard();
+
+                // Check win / draw
+                const winner = checkWinner();
+                if (winner) {
+                    updateGameStatus(winner);
+                    renderBoard(); // re-render to keep UI consistent
+                    return;
+                }
+                if (isBoardFull()) {
+                    updateGameStatus(null); // draw
+                    renderBoard();
+                    return;
+                }
+
+                // Switch player
+                currentPlayer = (currentPlayer === 'X' ? 'O' : 'X');
+                turnDisplay.textContent = currentPlayer;
+                statusEl.textContent = `Player ${currentPlayer}'s turn`;
+                statusEl.className = 'status';
+            }
+
+            // ----- Reset Game -----
+            function resetGame() {
+                board = Array(9).fill(null);
+                currentPlayer = 'X';
+                gameActive = true;
+                statusEl.textContent = `Player X's turn`;
+                statusEl.className = 'status';
+                renderBoard();
+            }
+
+            // ----- Full Reset (clears scores) -----
+            function fullReset() {
+                scores = { X: 0, O: 0, draw: 0 };
+                updateScoreDisplay();
+                resetGame();
+            }
+
+            // ----- Init -----
+            function init() {
+                resetGame();
+                resetBtn.addEventListener('click', fullReset);
+            }
+
+            init();
+        })();
+    </script>
 </body>
 </html>
