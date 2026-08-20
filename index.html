@@ -2,278 +2,346 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>XO Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>TechnothirsT' 25-26</title>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(145deg, #0b0e1a 0%, #1a1f2f 100%);
+            color: #fff;
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            background: linear-gradient(145deg, #0b1120, #1a2332);
-            color: #e8edf5;
+            padding: 20px;
         }
+
         .container {
-            background: rgba(255,255,255,0.05);
+            max-width: 1100px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(12px);
-            padding: 2.5rem 2rem 2rem;
-            border-radius: 3rem;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.08);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 48px;
+            padding: 50px 40px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.7);
             text-align: center;
-            width: 400px;
-            border: 1px solid rgba(255,255,255,0.06);
         }
+
+        .badge {
+            display: inline-block;
+            background: #00d4ff;
+            color: #0b0e1a;
+            font-weight: 700;
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            padding: 6px 20px;
+            border-radius: 40px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+
         h1 {
-            font-weight: 500;
-            font-size: 2.2rem;
+            font-size: 4.5rem;
+            font-weight: 800;
             letter-spacing: 4px;
-            margin-bottom: 0.5rem;
-            background: linear-gradient(135deg, #a0c0ff, #f9a8d4);
+            background: linear-gradient(135deg, #00d4ff, #7a5cff);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
         }
-        .turn-indicator {
-            font-size: 1.2rem;
-            margin-bottom: 1.5rem;
-            background: rgba(0,0,0,0.3);
-            padding: 0.5rem 1rem;
-            border-radius: 40px;
-            display: inline-block;
-            border: 1px solid rgba(255,255,255,0.06);
+
+        .subhead {
+            font-size: 1.3rem;
+            font-weight: 300;
+            color: #b0c4de;
+            letter-spacing: 6px;
+            margin-bottom: 10px;
         }
-        .turn-indicator span {
-            font-weight: 700;
-            color: #facc15;
-        }
-        .board {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            margin: 1.2rem 0;
-        }
-        .cell {
-            background: rgba(255,255,255,0.05);
-            aspect-ratio: 1 / 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 4rem;
-            font-weight: 600;
-            border-radius: 24px;
-            cursor: pointer;
-            transition: 0.2s ease;
-            box-shadow: 0 8px 0 rgba(0,0,0,0.3), inset 0 2px 4px rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.06);
-        }
-        .cell:hover { background: rgba(255,255,255,0.12); transform: scale(1.02); }
-        .cell:active { transform: scale(0.95); }
-        .cell.x { color: #60a5fa; text-shadow: 0 0 20px #3b82f680; }
-        .cell.o { color: #f472b6; text-shadow: 0 0 20px #ec489980; }
-        .status {
-            font-size: 1.1rem;
-            min-height: 3rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            margin: 0.8rem 0 1.2rem;
-            background: rgba(0,0,0,0.2);
-            padding: 0.5rem 1rem;
-            border-radius: 40px;
-            border: 1px solid rgba(255,255,255,0.04);
-        }
-        .status.win { color: #4ade80; }
-        .status.draw { color: #facc15; }
-        button {
-            background: rgba(255,255,255,0.07);
-            border: none;
-            padding: 0.8rem 2rem;
-            border-radius: 40px;
+
+        .tagline {
             font-size: 1rem;
+            color: #8892a8;
+            background: rgba(0, 212, 255, 0.08);
+            display: inline-block;
+            padding: 8px 28px;
+            border-radius: 40px;
+            border: 1px solid rgba(0, 212, 255, 0.15);
+            margin-bottom: 40px;
+        }
+
+        /* Countdown */
+        .countdown-wrapper {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            margin: 40px 0 50px;
+            flex-wrap: wrap;
+        }
+
+        .countdown-item {
+            background: rgba(0, 0, 0, 0.35);
+            border-radius: 20px;
+            padding: 18px 28px;
+            min-width: 90px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .countdown-item .number {
+            font-size: 2.8rem;
+            font-weight: 700;
+            color: #00d4ff;
+            display: block;
+            line-height: 1.2;
+        }
+
+        .countdown-item .label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #8892a8;
+        }
+
+        /* Departments Grid */
+        .section-title {
+            font-size: 1.6rem;
             font-weight: 600;
-            color: #e8edf5;
-            cursor: pointer;
-            transition: 0.25s ease;
-            border: 1px solid rgba(255,255,255,0.06);
+            margin: 50px 0 25px;
+            color: #e0e8f0;
             letter-spacing: 1px;
         }
-        button:hover { background: rgba(255,255,255,0.15); transform: scale(1.02); }
-        button:active { transform: scale(0.96); }
-        .score {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 1.2rem;
-            font-size: 0.95rem;
-            background: rgba(0,0,0,0.2);
-            padding: 0.6rem 1.2rem;
-            border-radius: 40px;
-            border: 1px solid rgba(255,255,255,0.04);
+
+        .section-title span {
+            color: #00d4ff;
         }
-        .score span { font-weight: 700; }
-        .score .x-score { color: #60a5fa; }
-        .score .o-score { color: #f472b6; }
-        .score .draw-score { color: #facc15; }
+
+        .dept-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .dept-card {
+            background: rgba(255, 255, 255, 0.04);
+            padding: 18px 10px;
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            transition: 0.3s ease;
+            cursor: default;
+        }
+
+        .dept-card:hover {
+            background: rgba(0, 212, 255, 0.08);
+            border-color: #00d4ff;
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px rgba(0, 212, 255, 0.08);
+        }
+
+        .dept-card .dept-name {
+            font-weight: 600;
+            font-size: 1rem;
+            color: #f0f4ff;
+        }
+
+        .dept-card .dept-date {
+            font-size: 0.8rem;
+            color: #7a8aa0;
+            margin-top: 6px;
+            display: block;
+        }
+
+        .dept-card .dept-date.highlight {
+            color: #00d4ff;
+            font-weight: 600;
+        }
+
+        .dept-card i {
+            color: #7a5cff;
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .footer-note {
+            margin-top: 50px;
+            padding-top: 25px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            font-size: 0.9rem;
+            color: #5a6a80;
+            letter-spacing: 1px;
+        }
+
+        .footer-note i {
+            color: #00d4ff;
+            margin: 0 4px;
+        }
+
+        @media (max-width: 650px) {
+            h1 {
+                font-size: 2.8rem;
+            }
+            .countdown-wrapper {
+                gap: 12px;
+            }
+            .countdown-item {
+                padding: 12px 18px;
+                min-width: 65px;
+            }
+            .countdown-item .number {
+                font-size: 2rem;
+            }
+            .container {
+                padding: 30px 18px;
+                border-radius: 28px;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>✦ XO ✦</h1>
-        <div class="turn-indicator">Turn: <span id="turnDisplay">X</span></div>
+        <!-- Badge -->
+        <div class="badge">🚀 National Level</div>
 
-        <div class="board" id="board">
-            <!-- 9 cells will be injected by JS -->
+        <!-- Header -->
+        <h1>TechnothirsT' 25-26</h1>
+        <div class="subhead">✦ Technical Symposium ✦</div>
+        <div class="tagline">
+            <i class="fas fa-calendar-alt" style="margin-right: 10px; color:#00d4ff;"></i> 
+            CSE: 08-10-25 &nbsp;|&nbsp; IT: 10-10-25 &nbsp;|&nbsp; ECE: 09-10-25
         </div>
 
-        <div class="status" id="status">Player X's turn</div>
-        <button id="resetBtn">↻ New Game</button>
+        <!-- Countdown Timer (target: 08-10-2026) -->
+        <div class="countdown-wrapper" id="countdown">
+            <div class="countdown-item">
+                <span class="number" id="days">00</span>
+                <span class="label">Days</span>
+            </div>
+            <div class="countdown-item">
+                <span class="number" id="hours">00</span>
+                <span class="label">Hours</span>
+            </div>
+            <div class="countdown-item">
+                <span class="number" id="minutes">00</span>
+                <span class="label">Mins</span>
+            </div>
+            <div class="countdown-item">
+                <span class="number" id="seconds">00</span>
+                <span class="label">Secs</span>
+            </div>
+        </div>
 
-        <div class="score">
-            <span>X <span class="x-score" id="scoreX">0</span></span>
-            <span>Draw <span class="draw-score" id="scoreDraw">0</span></span>
-            <span>O <span class="o-score" id="scoreO">0</span></span>
+        <!-- Departments -->
+        <div class="section-title">📌 <span>Participating</span> Departments</div>
+        <div class="dept-grid">
+            <!-- CSE -->
+            <div class="dept-card">
+                <i class="fas fa-laptop-code"></i>
+                <div class="dept-name">CSE</div>
+                <span class="dept-date highlight">08-10-25</span>
+            </div>
+            <!-- IT -->
+            <div class="dept-card">
+                <i class="fas fa-network-wired"></i>
+                <div class="dept-name">IT</div>
+                <span class="dept-date highlight">10-10-25</span>
+            </div>
+            <!-- ECE -->
+            <div class="dept-card">
+                <i class="fas fa-microchip"></i>
+                <div class="dept-name">ECE</div>
+                <span class="dept-date highlight">09-10-25</span>
+            </div>
+            <!-- EEE -->
+            <div class="dept-card">
+                <i class="fas fa-bolt"></i>
+                <div class="dept-name">EEE</div>
+                <span class="dept-date">TBA</span>
+            </div>
+            <!-- ICE -->
+            <div class="dept-card">
+                <i class="fas fa-robot"></i>
+                <div class="dept-name">ICE</div>
+                <span class="dept-date">TBA</span>
+            </div>
+            <!-- MECH -->
+            <div class="dept-card">
+                <i class="fas fa-cogs"></i>
+                <div class="dept-name">MECH</div>
+                <span class="dept-date">TBA</span>
+            </div>
+            <!-- CIVIL -->
+            <div class="dept-card">
+                <i class="fas fa-city"></i>
+                <div class="dept-name">CIVIL</div>
+                <span class="dept-date">TBA</span>
+            </div>
+            <!-- AIDS -->
+            <div class="dept-card">
+                <i class="fas fa-brain"></i>
+                <div class="dept-name">AIDS</div>
+                <span class="dept-date">TBA</span>
+            </div>
+            <!-- MBA -->
+            <div class="dept-card">
+                <i class="fas fa-chart-line"></i>
+                <div class="dept-name">MBA</div>
+                <span class="dept-date">TBA</span>
+            </div>
+            <!-- MCA -->
+            <div class="dept-card">
+                <i class="fas fa-database"></i>
+                <div class="dept-name">MCA</div>
+                <span class="dept-date">TBA</span>
+            </div>
+        </div>
+
+        <div class="footer-note">
+            <i class="fas fa-map-pin"></i> National Level Student's Technical Symposium &nbsp;·&nbsp; 
+            <i class="fas fa-calendar-check"></i> October 2026
         </div>
     </div>
 
     <script>
-        (function() {
-            // ----- Game State -----
-            const boardEl = document.getElementById('board');
-            const statusEl = document.getElementById('status');
-            const turnDisplay = document.getElementById('turnDisplay');
-            const resetBtn = document.getElementById('resetBtn');
+        // Set the target date: October 8, 2026 (first event)
+        const targetDate = new Date("October 8, 2026 09:00:00").getTime();
 
-            const scoreXEl = document.getElementById('scoreX');
-            const scoreOEl = document.getElementById('scoreO');
-            const scoreDrawEl = document.getElementById('scoreDraw');
+        function updateCountdown() {
+            const now = new Date().getTime();
+            const distance = targetDate - now;
 
-            let board = Array(9).fill(null);
-            let currentPlayer = 'X';       // 'X' always starts
-            let gameActive = true;
-            let scores = { X: 0, O: 0, draw: 0 };
-
-            // Win patterns (8 lines)
-            const WIN_PATTERNS = [
-                [0,1,2], [3,4,5], [6,7,8],  // rows
-                [0,3,6], [1,4,7], [2,5,8],  // columns
-                [0,4,8], [2,4,6]            // diagonals
-            ];
-
-            // ----- Render Board -----
-            function renderBoard() {
-                boardEl.innerHTML = '';
-                for (let i = 0; i < 9; i++) {
-                    const cell = document.createElement('div');
-                    cell.classList.add('cell');
-                    if (board[i] === 'X') cell.classList.add('x');
-                    if (board[i] === 'O') cell.classList.add('o');
-                    cell.textContent = board[i] || '';
-                    cell.dataset.index = i;
-                    cell.addEventListener('click', handleCellClick);
-                    boardEl.appendChild(cell);
-                }
-                turnDisplay.textContent = currentPlayer;
+            if (distance < 0) {
+                document.getElementById("days").textContent = "00";
+                document.getElementById("hours").textContent = "00";
+                document.getElementById("minutes").textContent = "00";
+                document.getElementById("seconds").textContent = "00";
+                return;
             }
 
-            // ----- Check Winner -----
-            function checkWinner() {
-                for (const pattern of WIN_PATTERNS) {
-                    const [a,b,c] = pattern;
-                    if (board[a] && board[a] === board[b] && board[a] === board[c]) {
-                        return board[a]; // 'X' or 'O'
-                    }
-                }
-                return null;
-            }
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
 
-            function isBoardFull() {
-                return board.every(cell => cell !== null);
-            }
+            document.getElementById("days").textContent = String(days).padStart(2, "0");
+            document.getElementById("hours").textContent = String(hours).padStart(2, "0");
+            document.getElementById("minutes").textContent = String(minutes).padStart(2, "0");
+            document.getElementById("seconds").textContent = String(seconds).padStart(2, "0");
+        }
 
-            // ----- Update Status & Scores -----
-            function updateGameStatus(winner) {
-                if (winner) {
-                    gameActive = false;
-                    statusEl.textContent = `🏆 Player ${winner} wins!`;
-                    statusEl.className = 'status win';
-                    scores[winner] += 1;
-                    updateScoreDisplay();
-                } else if (isBoardFull()) {
-                    gameActive = false;
-                    statusEl.textContent = `🤝 It's a draw!`;
-                    statusEl.className = 'status draw';
-                    scores.draw += 1;
-                    updateScoreDisplay();
-                } else {
-                    statusEl.textContent = `Player ${currentPlayer}'s turn`;
-                    statusEl.className = 'status';
-                }
-            }
-
-            function updateScoreDisplay() {
-                scoreXEl.textContent = scores.X;
-                scoreOEl.textContent = scores.O;
-                scoreDrawEl.textContent = scores.draw;
-            }
-
-            // ----- Cell Click Handler -----
-            function handleCellClick(e) {
-                const index = parseInt(e.currentTarget.dataset.index, 10);
-
-                // Ignore if game over, cell taken, or invalid
-                if (!gameActive) return;
-                if (board[index] !== null) return;
-
-                // Place mark
-                board[index] = currentPlayer;
-                renderBoard();
-
-                // Check win / draw
-                const winner = checkWinner();
-                if (winner) {
-                    updateGameStatus(winner);
-                    renderBoard(); // re-render to keep UI consistent
-                    return;
-                }
-                if (isBoardFull()) {
-                    updateGameStatus(null); // draw
-                    renderBoard();
-                    return;
-                }
-
-                // Switch player
-                currentPlayer = (currentPlayer === 'X' ? 'O' : 'X');
-                turnDisplay.textContent = currentPlayer;
-                statusEl.textContent = `Player ${currentPlayer}'s turn`;
-                statusEl.className = 'status';
-            }
-
-            // ----- Reset Game -----
-            function resetGame() {
-                board = Array(9).fill(null);
-                currentPlayer = 'X';
-                gameActive = true;
-                statusEl.textContent = `Player X's turn`;
-                statusEl.className = 'status';
-                renderBoard();
-            }
-
-            // ----- Full Reset (clears scores) -----
-            function fullReset() {
-                scores = { X: 0, O: 0, draw: 0 };
-                updateScoreDisplay();
-                resetGame();
-            }
-
-            // ----- Init -----
-            function init() {
-                resetGame();
-                resetBtn.addEventListener('click', fullReset);
-            }
-
-            init();
-        })();
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
     </script>
 </body>
 </html>
